@@ -29,6 +29,29 @@ const emptyForm: FormState = {
 
 const KCAL_PER_G = { protein: 4, carbs: 4, fats: 9 } as const;
 
+type MacroKey = "protein" | "carbs" | "fats";
+
+const MACRO_THEME: Record<
+  MacroKey,
+  { label: string; fg: string; soft: string }
+> = {
+  protein: {
+    label: "Protein",
+    fg: "var(--color-protein)",
+    soft: "var(--color-protein-soft)",
+  },
+  carbs: {
+    label: "Carbs",
+    fg: "var(--color-carbs)",
+    soft: "var(--color-carbs-soft)",
+  },
+  fats: {
+    label: "Fats",
+    fg: "var(--color-fats)",
+    soft: "var(--color-fats-soft)",
+  },
+};
+
 export default function Home() {
   const [entries, setEntries] = useState<Entry[]>([]);
   const [form, setForm] = useState<FormState>(emptyForm);
@@ -83,11 +106,11 @@ function Header() {
     <header className="flex items-center justify-between pt-2">
       <div className="flex items-center gap-2.5">
         <LogoMark />
-        <span className="text-lg font-semibold tracking-tight">
-          Macro<span className="text-[--color-accent]">Metr</span>
+        <span className="text-lg font-semibold tracking-tight text-[--color-fg]">
+          Macro<span className="text-[--color-accent-strong]">Metr</span>
         </span>
       </div>
-      <div className="flex items-center gap-1.5 rounded-full border border-[--color-border] bg-[--color-surface]/60 px-3 py-1 text-[11px] font-medium uppercase tracking-widest text-[--color-muted] backdrop-blur">
+      <div className="flex items-center gap-1.5 rounded-full border border-[--color-border] bg-[--color-surface]/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-[--color-muted] backdrop-blur card-shadow">
         <span className="h-1.5 w-1.5 rounded-full bg-[--color-accent] [animation:pulse-ring_2.4s_ease-in-out_infinite]" />
         Today
       </div>
@@ -97,14 +120,14 @@ function Header() {
 
 function LogoMark() {
   return (
-    <span className="grid h-8 w-8 place-items-center rounded-xl bg-gradient-to-br from-[--color-accent] to-[--color-accent-strong] text-[--color-accent-fg] shadow-[0_0_24px_-4px_rgba(163,230,53,0.5)]">
+    <span className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-500 to-sky-500 text-white shadow-[0_8px_20px_-6px_rgba(16,185,129,0.5)]">
       <svg
         viewBox="0 0 24 24"
         width="16"
         height="16"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2.4"
+        strokeWidth="2.6"
         strokeLinecap="round"
         strokeLinejoin="round"
         aria-hidden
@@ -138,29 +161,35 @@ function Hero({
   };
 
   return (
-    <section className="relative overflow-hidden rounded-3xl border border-[--color-border] bg-gradient-to-b from-[--color-surface-2] to-[--color-surface] p-5 shadow-2xl shadow-black/40">
+    <section className="card-shadow-lg relative overflow-hidden rounded-3xl border border-[--color-border] bg-[--color-surface] p-5">
       <div
         aria-hidden
-        className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full bg-[--color-accent]/10 blur-3xl"
+        className="pointer-events-none absolute -top-24 -right-20 h-56 w-56 rounded-full bg-gradient-to-br from-emerald-200/60 to-sky-200/40 blur-3xl"
+      />
+      <div
+        aria-hidden
+        className="pointer-events-none absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-rose-200/40 to-amber-200/40 blur-3xl"
       />
 
       <div className="relative flex items-end justify-between">
         <div>
-          <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-[--color-muted]">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[--color-muted]">
             Total intake
           </div>
           <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="bg-gradient-to-b from-white to-zinc-400 bg-clip-text text-5xl font-semibold tabular-nums text-transparent sm:text-6xl">
+            <span className="bg-gradient-to-br from-slate-900 to-slate-500 bg-clip-text text-5xl font-semibold tabular-nums text-transparent sm:text-6xl">
               {Math.round(totals.calories)}
             </span>
-            <span className="text-sm font-medium text-[--color-muted]">
+            <span className="text-sm font-semibold text-[--color-muted]">
               kcal
             </span>
           </div>
         </div>
         <div className="text-right">
-          <div className="text-2xl font-semibold tabular-nums">{count}</div>
-          <div className="text-[11px] uppercase tracking-widest text-[--color-subtle]">
+          <div className="text-2xl font-semibold tabular-nums text-[--color-fg]">
+            {count}
+          </div>
+          <div className="text-[11px] font-semibold uppercase tracking-widest text-[--color-subtle]">
             {count === 1 ? "entry" : "entries"}
           </div>
         </div>
@@ -168,25 +197,10 @@ function Hero({
 
       <DistributionBar shares={shares} hasData={macroKcal > 0} />
 
-      <div className="relative mt-4 grid grid-cols-3 gap-2">
-        <MacroStat
-          label="Protein"
-          grams={totals.protein}
-          share={shares.protein}
-          color="var(--color-protein)"
-        />
-        <MacroStat
-          label="Carbs"
-          grams={totals.carbs}
-          share={shares.carbs}
-          color="var(--color-carbs)"
-        />
-        <MacroStat
-          label="Fats"
-          grams={totals.fats}
-          share={shares.fats}
-          color="var(--color-fats)"
-        />
+      <div className="relative mt-4 grid grid-cols-3 gap-2.5">
+        <MacroStat macro="protein" grams={totals.protein} share={shares.protein} />
+        <MacroStat macro="carbs" grams={totals.carbs} share={shares.carbs} />
+        <MacroStat macro="fats" grams={totals.fats} share={shares.fats} />
       </div>
     </section>
   );
@@ -201,24 +215,33 @@ function DistributionBar({
 }) {
   return (
     <div className="relative mt-5">
-      <div className="flex h-2 w-full overflow-hidden rounded-full bg-[--color-bg]/60 ring-1 ring-inset ring-[--color-border]">
+      <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100 ring-1 ring-inset ring-[--color-border]">
         {hasData ? (
           <>
             <span
-              className="bar-segment block h-full bg-[--color-protein]"
-              style={{ flexGrow: shares.protein }}
+              className="bar-segment block h-full"
+              style={{
+                flexGrow: shares.protein,
+                backgroundColor: "var(--color-protein)",
+              }}
             />
             <span
-              className="bar-segment block h-full bg-[--color-carbs]"
-              style={{ flexGrow: shares.carbs }}
+              className="bar-segment block h-full"
+              style={{
+                flexGrow: shares.carbs,
+                backgroundColor: "var(--color-carbs)",
+              }}
             />
             <span
-              className="bar-segment block h-full bg-[--color-fats]"
-              style={{ flexGrow: shares.fats }}
+              className="bar-segment block h-full"
+              style={{
+                flexGrow: shares.fats,
+                backgroundColor: "var(--color-fats)",
+              }}
             />
           </>
         ) : (
-          <span className="block h-full w-full bg-[linear-gradient(90deg,transparent,rgba(255,255,255,0.04),transparent)]" />
+          <span className="block h-full w-full bg-[linear-gradient(90deg,transparent,rgba(15,23,42,0.06),transparent)]" />
         )}
       </div>
     </div>
@@ -226,37 +249,48 @@ function DistributionBar({
 }
 
 function MacroStat({
-  label,
+  macro,
   grams,
   share,
-  color,
 }: {
-  label: string;
+  macro: MacroKey;
   grams: number;
   share: number;
-  color: string;
 }) {
+  const theme = MACRO_THEME[macro];
   return (
-    <div className="rounded-xl border border-[--color-border] bg-[--color-bg]/40 px-3 py-2.5">
+    <div
+      className="rounded-2xl border px-3 py-2.5"
+      style={{
+        backgroundColor: theme.soft,
+        borderColor: "color-mix(in srgb, " + theme.fg + " 18%, transparent)",
+      }}
+    >
       <div className="flex items-center gap-1.5">
         <span
           className="h-1.5 w-1.5 rounded-full"
-          style={{ backgroundColor: color }}
+          style={{ backgroundColor: theme.fg }}
           aria-hidden
         />
-        <span className="text-[10px] font-semibold uppercase tracking-wider text-[--color-muted]">
-          {label}
+        <span
+          className="text-[10px] font-bold uppercase tracking-wider"
+          style={{ color: theme.fg }}
+        >
+          {theme.label}
         </span>
       </div>
       <div className="mt-1 flex items-baseline gap-1">
-        <span className="text-xl font-semibold tabular-nums">
+        <span className="text-xl font-semibold tabular-nums text-[--color-fg]">
           {round1(grams)}
         </span>
-        <span className="text-[11px] font-medium text-[--color-subtle]">
+        <span className="text-[11px] font-semibold text-[--color-muted]">
           g
         </span>
       </div>
-      <div className="mt-0.5 text-[10px] tabular-nums text-[--color-subtle]">
+      <div
+        className="mt-0.5 text-[10px] font-semibold tabular-nums"
+        style={{ color: theme.fg, opacity: 0.75 }}
+      >
         {Math.round(share)}%
       </div>
     </div>
@@ -277,11 +311,11 @@ function EntryForm({
   return (
     <form
       onSubmit={onSubmit}
-      className="rounded-3xl border border-[--color-border] bg-[--color-surface]/80 p-4 shadow-xl shadow-black/30 backdrop-blur"
+      className="card-shadow rounded-3xl border border-[--color-border] bg-[--color-surface] p-4"
     >
       <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold">Add food</h2>
-        <span className="text-[11px] uppercase tracking-widest text-[--color-subtle]">
+        <h2 className="text-sm font-semibold text-[--color-fg]">Add food</h2>
+        <span className="text-[11px] font-semibold uppercase tracking-widest text-[--color-subtle]">
           Quick log
         </span>
       </div>
@@ -328,7 +362,7 @@ function EntryForm({
       <button
         type="submit"
         disabled={!canSubmit}
-        className="group relative mt-5 inline-flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-b from-[--color-accent] to-[--color-accent-strong] font-semibold text-[--color-accent-fg] shadow-[0_8px_24px_-8px_rgba(163,230,53,0.6)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:opacity-40 disabled:shadow-none"
+        className="group relative mt-5 inline-flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-500 to-teal-500 font-semibold text-white shadow-[0_10px_24px_-8px_rgba(16,185,129,0.55)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-none disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
       >
         <svg
           width="16"
@@ -360,9 +394,9 @@ function EntriesSection({
   return (
     <section className="flex flex-col gap-2">
       <div className="flex items-center justify-between px-1">
-        <h2 className="text-sm font-semibold">Entries</h2>
+        <h2 className="text-sm font-semibold text-[--color-fg]">Entries</h2>
         {entries.length > 0 && (
-          <span className="text-[11px] tabular-nums text-[--color-subtle]">
+          <span className="text-[11px] font-semibold tabular-nums text-[--color-subtle]">
             {entries.length} logged
           </span>
         )}
@@ -382,15 +416,15 @@ function EntriesSection({
 
 function EmptyState() {
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[--color-border] bg-[--color-surface]/30 p-8 text-center">
-      <span className="grid h-10 w-10 place-items-center rounded-full border border-[--color-border] bg-[--color-surface] text-[--color-subtle]">
+    <div className="card-shadow flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[--color-border-strong] bg-[--color-surface]/60 p-8 text-center">
+      <span className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-emerald-100 to-sky-100 text-emerald-700">
         <svg
-          width="18"
-          height="18"
+          width="20"
+          height="20"
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          strokeWidth="1.8"
+          strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
           aria-hidden
@@ -406,7 +440,9 @@ function EmptyState() {
         </svg>
       </span>
       <div>
-        <div className="text-sm font-medium">Nothing logged yet</div>
+        <div className="text-sm font-semibold text-[--color-fg]">
+          Nothing logged yet
+        </div>
         <div className="mt-0.5 text-xs text-[--color-muted]">
           Add a food above to start your day.
         </div>
@@ -430,7 +466,7 @@ function Field({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[11px] font-semibold uppercase tracking-wider text-[--color-muted]">
+      <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[--color-muted]">
         {label}
       </span>
       <input
@@ -440,7 +476,7 @@ function Field({
         placeholder={placeholder}
         autoFocus={autoFocus}
         autoComplete="off"
-        className="h-12 w-full rounded-xl border border-[--color-border] bg-[--color-surface-2] px-3.5 text-base text-[--color-fg] placeholder:text-[--color-subtle] outline-none transition focus:border-[--color-accent]/60 focus:bg-[--color-surface-2] focus:ring-2 focus:ring-[--color-accent]/25"
+        className="h-12 w-full rounded-xl border border-[--color-border] bg-[--color-surface-2]/60 px-3.5 text-base text-[--color-fg] placeholder:text-[--color-subtle] outline-none transition focus:border-[--color-accent]/60 focus:bg-[--color-surface] focus:ring-2 focus:ring-[--color-accent]/25"
       />
     </label>
   );
@@ -461,7 +497,7 @@ function NumField({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-[--color-muted]">
+      <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[--color-muted]">
         {accent && (
           <span
             className="h-1.5 w-1.5 rounded-full"
@@ -480,10 +516,18 @@ function NumField({
           value={value}
           onChange={(e) => onChange(e.target.value)}
           placeholder="0"
-          className="h-12 w-full rounded-xl border border-[--color-border] bg-[--color-surface-2] px-3.5 pr-12 text-base tabular-nums text-[--color-fg] placeholder:text-[--color-subtle] outline-none transition focus:border-[--color-accent]/60 focus:ring-2 focus:ring-[--color-accent]/25"
+          className="h-12 w-full rounded-xl border border-[--color-border] bg-[--color-surface-2]/60 px-3.5 pr-12 text-base tabular-nums text-[--color-fg] placeholder:text-[--color-subtle] outline-none transition focus:border-[--color-accent]/60 focus:bg-[--color-surface] focus:ring-2 focus:ring-[--color-accent]/25"
+          style={
+            accent
+              ? ({
+                  ["--tw-ring-color" as string]:
+                    "color-mix(in srgb, " + accent + " 30%, transparent)",
+                } as React.CSSProperties)
+              : undefined
+          }
         />
         {unit && (
-          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-medium text-[--color-subtle]">
+          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[--color-subtle]">
             {unit}
           </span>
         )}
@@ -500,28 +544,30 @@ function EntryRow({
   onRemove: (id: string) => void;
 }) {
   return (
-    <li className="animate-row-in group flex items-center gap-3 rounded-2xl border border-[--color-border] bg-[--color-surface]/80 px-4 py-3 transition hover:border-[--color-border-strong]">
+    <li className="card-shadow animate-row-in group flex items-center gap-3 rounded-2xl border border-[--color-border] bg-[--color-surface] px-4 py-3 transition hover:border-[--color-border-strong]">
       <div className="min-w-0 flex-1">
         <div className="flex items-baseline justify-between gap-3">
-          <span className="truncate font-medium">{entry.name}</span>
+          <span className="truncate font-semibold text-[--color-fg]">
+            {entry.name}
+          </span>
           <span className="shrink-0 text-sm font-semibold tabular-nums text-[--color-fg]">
             {Math.round(entry.calories)}
-            <span className="ml-0.5 text-[10px] font-medium text-[--color-subtle]">
+            <span className="ml-0.5 text-[10px] font-semibold text-[--color-muted]">
               kcal
             </span>
           </span>
         </div>
-        <div className="mt-1.5 flex items-center gap-3 text-[11px] tabular-nums text-[--color-muted]">
-          <MacroChip label="P" value={entry.protein} color="var(--color-protein)" />
-          <MacroChip label="C" value={entry.carbs} color="var(--color-carbs)" />
-          <MacroChip label="F" value={entry.fats} color="var(--color-fats)" />
+        <div className="mt-1.5 flex items-center gap-2 text-[11px] tabular-nums">
+          <MacroChip macro="protein" value={entry.protein} />
+          <MacroChip macro="carbs" value={entry.carbs} />
+          <MacroChip macro="fats" value={entry.fats} />
         </div>
       </div>
       <button
         type="button"
         onClick={() => onRemove(entry.id)}
         aria-label={`Remove ${entry.name}`}
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[--color-border] text-[--color-subtle] opacity-60 transition hover:border-red-500/40 hover:text-red-400 hover:opacity-100 active:scale-95 group-hover:opacity-100"
+        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[--color-border] bg-[--color-surface] text-[--color-subtle] opacity-70 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 hover:opacity-100 active:scale-95 group-hover:opacity-100"
       >
         <svg
           width="14"
@@ -543,26 +589,18 @@ function EntryRow({
   );
 }
 
-function MacroChip({
-  label,
-  value,
-  color,
-}: {
-  label: string;
-  value: number;
-  color: string;
-}) {
+function MacroChip({ macro, value }: { macro: MacroKey; value: number }) {
+  const theme = MACRO_THEME[macro];
+  const initial = theme.label[0];
   return (
-    <span className="inline-flex items-center gap-1">
-      <span
-        className="h-1 w-1 rounded-full"
-        style={{ backgroundColor: color }}
-        aria-hidden
-      />
-      <span className="text-[--color-subtle]">{label}</span>
-      <span className="font-medium text-[--color-fg]/90">
+    <span
+      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
+      style={{ backgroundColor: theme.soft, color: theme.fg }}
+    >
+      <span>{initial}</span>
+      <span className="tabular-nums">
         {round1(value)}
-        <span className="text-[--color-subtle]">g</span>
+        <span className="opacity-70">g</span>
       </span>
     </span>
   );
