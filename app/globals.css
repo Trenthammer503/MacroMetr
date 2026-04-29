@@ -127,8 +127,14 @@ input[type="number"] {
 
 .quick-chip:hover {
   background: var(--color-lime-soft);
-  border-color: var(--color-fg);
-  transform: translateY(-1px);
+}
+
+.quick-scroll {
+  scrollbar-width: none;
+}
+
+.quick-scroll::-webkit-scrollbar {
+  display: none;
 }
 
 .primary-submit {

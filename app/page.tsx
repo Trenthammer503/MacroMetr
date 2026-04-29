@@ -394,7 +394,7 @@ function EntryComposer({
     >
       <div className="flex items-center justify-between gap-3">
         <div>
-          <h1 className="text-lg font-black tracking-tight">Fast add</h1>
+          <h1 className="text-lg font-black tracking-tight">Quick add</h1>
           <div className="text-xs font-bold text-[--color-muted-strong]">
             Tap, type, save, done.
           </div>
@@ -473,13 +473,13 @@ function EntryComposer({
 
 function QuickFill({ onSelect }: { onSelect: (form: FormState) => void }) {
   return (
-    <div className="-mx-1 mt-4 flex gap-2 overflow-x-auto px-1 pb-2">
+    <div className="quick-scroll -mx-1 mt-4 flex gap-2 overflow-x-auto px-1 py-1">
       {quickFoods.map((food) => (
         <button
           key={food.name}
           type="button"
           onClick={() => onSelect(food)}
-          className="quick-chip shrink-0 rounded-full border border-[--color-outline] bg-[--color-surface] px-3.5 py-2 text-xs font-black text-[--color-fg] shadow-pop-small transition active:scale-95"
+          className="quick-chip shrink-0 rounded-full border border-[--color-outline] bg-[--color-surface] px-3.5 py-2 text-xs font-black leading-none text-[--color-fg] shadow-pop-small transition-colors active:scale-95"
         >
           {food.name}
         </button>
