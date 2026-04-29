@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 
 type Entry = {
   id: string;
@@ -28,42 +28,60 @@ const emptyForm: FormState = {
 };
 
 const KCAL_PER_G = { protein: 4, carbs: 4, fats: 9 } as const;
+const STORAGE_PREFIX = "macrometr:entries";
 
 type MacroKey = "protein" | "carbs" | "fats";
 
-const MACRO_THEME: Record<
-  MacroKey,
-  { label: string; fg: string; soft: string }
-> = {
-  protein: {
+const MACROS: Array<{
+  key: MacroKey;
+  label: string;
+  short: string;
+  color: string;
+  soft: string;
+}> = [
+  {
+    key: "protein",
     label: "Protein",
-    fg: "var(--color-protein)",
+    short: "P",
+    color: "var(--color-protein)",
     soft: "var(--color-protein-soft)",
   },
-  carbs: {
+  {
+    key: "carbs",
     label: "Carbs",
-    fg: "var(--color-carbs)",
+    short: "C",
+    color: "var(--color-carbs)",
     soft: "var(--color-carbs-soft)",
   },
-  fats: {
+  {
+    key: "fats",
     label: "Fats",
-    fg: "var(--color-fats)",
+    short: "F",
+    color: "var(--color-fats)",
     soft: "var(--color-fats-soft)",
   },
-};
+];
 
 export default function Home() {
-  const [entries, setEntries] = useState<Entry[]>([]);
   const [form, setForm] = useState<FormState>(emptyForm);
+
+  const todayKey = useMemo(() => getLocalDayKey(), []);
+  const storageKey = `${STORAGE_PREFIX}:${todayKey}`;
+  const entryStore = useMemo(() => createLocalEntryStore(storageKey), [storageKey]);
+  const entries = useSyncExternalStore(
+    entryStore.subscribe,
+    entryStore.getSnapshot,
+    entryStore.getServerSnapshot,
+  );
 
   const totals = useMemo(
     () =>
       entries.reduce(
-        (acc, e) => ({
-          calories: acc.calories + e.calories,
-          protein: acc.protein + e.protein,
-          fats: acc.fats + e.fats,
-          carbs: acc.carbs + e.carbs,
+        (acc, entry) => ({
+          calories: acc.calories + entry.calories,
+          protein: acc.protein + entry.protein,
+          fats: acc.fats + entry.fats,
+          carbs: acc.carbs + entry.carbs,
         }),
         { calories: 0, protein: 0, fats: 0, carbs: 0 },
       ),
@@ -72,6 +90,7 @@ export default function Home() {
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
+
     const name = form.name.trim();
     if (!name) return;
 
@@ -83,36 +102,48 @@ export default function Home() {
       fats: parseNum(form.fats),
       carbs: parseNum(form.carbs),
     };
-    setEntries((prev) => [entry, ...prev]);
+
+    entryStore.setEntries([entry, ...entries]);
     setForm(emptyForm);
   }
 
   function removeEntry(id: string) {
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+    entryStore.setEntries(entries.filter((entry) => entry.id !== id));
   }
 
   return (
-    <main className="mx-auto flex w-full max-w-md flex-1 flex-col gap-6 px-4 pt-6 pb-32 sm:max-w-xl sm:px-6">
-      <Header />
-      <Hero totals={totals} count={entries.length} />
-      <EntryForm form={form} setForm={setForm} onSubmit={handleSubmit} />
-      <EntriesSection entries={entries} onRemove={removeEntry} />
+    <main className="mx-auto flex min-h-dvh w-full max-w-md flex-col px-4 pb-8 pt-[calc(env(safe-area-inset-top)+14px)] sm:max-w-2xl sm:px-6">
+      <Header entryCount={entries.length} />
+
+      <div className="mt-4 grid gap-4 sm:grid-cols-[minmax(0,1fr)_18rem] sm:items-start">
+        <div className="grid gap-4">
+          <DaySummary totals={totals} count={entries.length} />
+          <EntryForm form={form} setForm={setForm} onSubmit={handleSubmit} />
+        </div>
+
+        <EntriesSection entries={entries} onRemove={removeEntry} />
+      </div>
     </main>
   );
 }
 
-function Header() {
+function Header({ entryCount }: { entryCount: number }) {
   return (
-    <header className="flex items-center justify-between pt-2">
-      <div className="flex items-center gap-2.5">
+    <header className="flex items-center justify-between">
+      <div className="flex items-center gap-3">
         <LogoMark />
-        <span className="text-lg font-semibold tracking-tight text-[--color-fg]">
-          Macro<span className="text-[--color-accent-strong]">Metr</span>
-        </span>
+        <div>
+          <div className="text-lg font-bold tracking-tight text-[--color-fg]">
+            MacroMetr
+          </div>
+          <div className="text-xs font-medium text-[--color-muted]">
+            {formatToday()}
+          </div>
+        </div>
       </div>
-      <div className="flex items-center gap-1.5 rounded-full border border-[--color-border] bg-[--color-surface]/90 px-3 py-1 text-[11px] font-semibold uppercase tracking-widest text-[--color-muted] backdrop-blur card-shadow">
-        <span className="h-1.5 w-1.5 rounded-full bg-[--color-accent] [animation:pulse-ring_2.4s_ease-in-out_infinite]" />
-        Today
+
+      <div className="rounded-full border border-[--color-border] bg-[--color-surface] px-3 py-1.5 text-xs font-semibold tabular-nums text-[--color-muted] shadow-soft">
+        {entryCount} {entryCount === 1 ? "item" : "items"}
       </div>
     </header>
   );
@@ -120,28 +151,27 @@ function Header() {
 
 function LogoMark() {
   return (
-    <span className="grid h-9 w-9 place-items-center rounded-2xl bg-gradient-to-br from-emerald-400 via-teal-500 to-sky-500 text-white shadow-[0_8px_20px_-6px_rgba(16,185,129,0.5)]">
+    <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[--color-fg] text-white shadow-soft">
       <svg
         viewBox="0 0 24 24"
-        width="16"
-        height="16"
+        width="20"
+        height="20"
         fill="none"
         stroke="currentColor"
-        strokeWidth="2.6"
         strokeLinecap="round"
         strokeLinejoin="round"
+        strokeWidth="2.4"
         aria-hidden
       >
-        <path d="M4 19V6" />
-        <path d="M10 19v-9" />
-        <path d="M16 19v-5" />
-        <path d="M22 19H2" />
+        <path d="M5 19V8" />
+        <path d="M12 19V5" />
+        <path d="M19 19v-8" />
       </svg>
     </span>
   );
 }
 
-function Hero({
+function DaySummary({
   totals,
   count,
 }: {
@@ -152,8 +182,8 @@ function Hero({
   const carbsKcal = totals.carbs * KCAL_PER_G.carbs;
   const fatsKcal = totals.fats * KCAL_PER_G.fats;
   const macroKcal = proteinKcal + carbsKcal + fatsKcal;
+  const share = (kcal: number) => (macroKcal > 0 ? (kcal / macroKcal) * 100 : 0);
 
-  const share = (k: number) => (macroKcal > 0 ? (k / macroKcal) * 100 : 0);
   const shares = {
     protein: share(proteinKcal),
     carbs: share(carbsKcal),
@@ -161,46 +191,41 @@ function Hero({
   };
 
   return (
-    <section className="card-shadow-lg relative overflow-hidden rounded-3xl border border-[--color-border] bg-[--color-surface] p-5">
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -top-24 -right-20 h-56 w-56 rounded-full bg-gradient-to-br from-emerald-200/60 to-sky-200/40 blur-3xl"
-      />
-      <div
-        aria-hidden
-        className="pointer-events-none absolute -bottom-24 -left-20 h-56 w-56 rounded-full bg-gradient-to-tr from-rose-200/40 to-amber-200/40 blur-3xl"
-      />
-
-      <div className="relative flex items-end justify-between">
+    <section className="rounded-[2rem] bg-[--color-fg] p-5 text-white shadow-panel">
+      <div className="flex items-start justify-between gap-4">
         <div>
-          <div className="text-[11px] font-semibold uppercase tracking-[0.18em] text-[--color-muted]">
-            Total intake
+          <div className="text-xs font-semibold uppercase tracking-widest text-white/50">
+            Today
           </div>
-          <div className="mt-1 flex items-baseline gap-1.5">
-            <span className="bg-gradient-to-br from-slate-900 to-slate-500 bg-clip-text text-5xl font-semibold tabular-nums text-transparent sm:text-6xl">
+          <div className="mt-2 flex items-end gap-2">
+            <span className="text-6xl font-bold leading-none tracking-tight tabular-nums">
               {Math.round(totals.calories)}
             </span>
-            <span className="text-sm font-semibold text-[--color-muted]">
+            <span className="pb-1.5 text-sm font-semibold text-white/55">
               kcal
             </span>
           </div>
         </div>
-        <div className="text-right">
-          <div className="text-2xl font-semibold tabular-nums text-[--color-fg]">
-            {count}
-          </div>
-          <div className="text-[11px] font-semibold uppercase tracking-widest text-[--color-subtle]">
-            {count === 1 ? "entry" : "entries"}
+
+        <div className="rounded-2xl bg-white/10 px-3 py-2 text-right">
+          <div className="text-2xl font-bold tabular-nums">{count}</div>
+          <div className="text-[11px] font-semibold uppercase tracking-widest text-white/45">
+            logged
           </div>
         </div>
       </div>
 
       <DistributionBar shares={shares} hasData={macroKcal > 0} />
 
-      <div className="relative mt-4 grid grid-cols-3 gap-2.5">
-        <MacroStat macro="protein" grams={totals.protein} share={shares.protein} />
-        <MacroStat macro="carbs" grams={totals.carbs} share={shares.carbs} />
-        <MacroStat macro="fats" grams={totals.fats} share={shares.fats} />
+      <div className="mt-4 grid grid-cols-3 gap-2">
+        {MACROS.map((macro) => (
+          <MacroStat
+            key={macro.key}
+            macro={macro}
+            grams={totals[macro.key]}
+            share={shares[macro.key]}
+          />
+        ))}
       </div>
     </section>
   );
@@ -210,40 +235,25 @@ function DistributionBar({
   shares,
   hasData,
 }: {
-  shares: { protein: number; carbs: number; fats: number };
+  shares: Record<MacroKey, number>;
   hasData: boolean;
 }) {
   return (
-    <div className="relative mt-5">
-      <div className="flex h-2.5 w-full overflow-hidden rounded-full bg-slate-100 ring-1 ring-inset ring-[--color-border]">
-        {hasData ? (
-          <>
-            <span
-              className="bar-segment block h-full"
-              style={{
-                flexGrow: shares.protein,
-                backgroundColor: "var(--color-protein)",
-              }}
-            />
-            <span
-              className="bar-segment block h-full"
-              style={{
-                flexGrow: shares.carbs,
-                backgroundColor: "var(--color-carbs)",
-              }}
-            />
-            <span
-              className="bar-segment block h-full"
-              style={{
-                flexGrow: shares.fats,
-                backgroundColor: "var(--color-fats)",
-              }}
-            />
-          </>
-        ) : (
-          <span className="block h-full w-full bg-[linear-gradient(90deg,transparent,rgba(15,23,42,0.06),transparent)]" />
-        )}
-      </div>
+    <div className="mt-5 flex h-2.5 overflow-hidden rounded-full bg-white/10">
+      {hasData ? (
+        MACROS.map((macro) => (
+          <span
+            key={macro.key}
+            className="bar-segment block h-full min-w-1"
+            style={{
+              flexGrow: shares[macro.key],
+              backgroundColor: macro.color,
+            }}
+          />
+        ))
+      ) : (
+        <span className="block h-full w-full bg-white/10" />
+      )}
     </div>
   );
 }
@@ -253,44 +263,27 @@ function MacroStat({
   grams,
   share,
 }: {
-  macro: MacroKey;
+  macro: (typeof MACROS)[number];
   grams: number;
   share: number;
 }) {
-  const theme = MACRO_THEME[macro];
   return (
-    <div
-      className="rounded-2xl border px-3 py-2.5"
-      style={{
-        backgroundColor: theme.soft,
-        borderColor: "color-mix(in srgb, " + theme.fg + " 18%, transparent)",
-      }}
-    >
+    <div className="rounded-2xl bg-white/[0.07] p-3">
       <div className="flex items-center gap-1.5">
         <span
-          className="h-1.5 w-1.5 rounded-full"
-          style={{ backgroundColor: theme.fg }}
+          className="h-2 w-2 rounded-full"
+          style={{ backgroundColor: macro.color }}
           aria-hidden
         />
-        <span
-          className="text-[10px] font-bold uppercase tracking-wider"
-          style={{ color: theme.fg }}
-        >
-          {theme.label}
+        <span className="text-[10px] font-bold uppercase tracking-wider text-white/50">
+          {macro.label}
         </span>
       </div>
-      <div className="mt-1 flex items-baseline gap-1">
-        <span className="text-xl font-semibold tabular-nums text-[--color-fg]">
-          {round1(grams)}
-        </span>
-        <span className="text-[11px] font-semibold text-[--color-muted]">
-          g
-        </span>
+      <div className="mt-2 text-2xl font-bold leading-none tabular-nums">
+        {round1(grams)}
+        <span className="ml-0.5 text-xs font-semibold text-white/45">g</span>
       </div>
-      <div
-        className="mt-0.5 text-[10px] font-semibold tabular-nums"
-        style={{ color: theme.fg, opacity: 0.75 }}
-      >
+      <div className="mt-1 text-[11px] font-semibold tabular-nums text-white/45">
         {Math.round(share)}%
       </div>
     </div>
@@ -303,19 +296,19 @@ function EntryForm({
   onSubmit,
 }: {
   form: FormState;
-  setForm: (f: FormState) => void;
-  onSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  setForm: (form: FormState) => void;
+  onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
   const canSubmit = form.name.trim().length > 0;
 
   return (
     <form
       onSubmit={onSubmit}
-      className="card-shadow rounded-3xl border border-[--color-border] bg-[--color-surface] p-4"
+      className="rounded-[2rem] border border-[--color-border] bg-[--color-surface] p-4 shadow-soft"
     >
-      <div className="mb-3 flex items-center justify-between">
-        <h2 className="text-sm font-semibold text-[--color-fg]">Add food</h2>
-        <span className="text-[11px] font-semibold uppercase tracking-widest text-[--color-subtle]">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-base font-bold text-[--color-fg]">Add food</h1>
+        <span className="rounded-full bg-[--color-accent-soft] px-2.5 py-1 text-[11px] font-bold text-[--color-accent-strong]">
           Quick log
         </span>
       </div>
@@ -323,8 +316,8 @@ function EntryForm({
       <Field
         label="Food"
         value={form.name}
-        onChange={(v) => setForm({ ...form, name: v })}
-        placeholder="e.g. Chicken breast"
+        onChange={(value) => setForm({ ...form, name: value })}
+        placeholder="Chicken bowl"
         autoFocus
       />
 
@@ -333,121 +326,50 @@ function EntryForm({
           label="Calories"
           unit="kcal"
           value={form.calories}
-          onChange={(v) => setForm({ ...form, calories: v })}
-          accent="var(--color-accent)"
+          onChange={(value) => setForm({ ...form, calories: value })}
         />
         <NumField
           label="Protein"
           unit="g"
           value={form.protein}
-          onChange={(v) => setForm({ ...form, protein: v })}
-          accent="var(--color-protein)"
+          onChange={(value) => setForm({ ...form, protein: value })}
         />
         <NumField
           label="Carbs"
           unit="g"
           value={form.carbs}
-          onChange={(v) => setForm({ ...form, carbs: v })}
-          accent="var(--color-carbs)"
+          onChange={(value) => setForm({ ...form, carbs: value })}
         />
         <NumField
           label="Fats"
           unit="g"
           value={form.fats}
-          onChange={(v) => setForm({ ...form, fats: v })}
-          accent="var(--color-fats)"
+          onChange={(value) => setForm({ ...form, fats: value })}
         />
       </div>
 
       <button
         type="submit"
         disabled={!canSubmit}
-        className="group relative mt-5 inline-flex h-12 w-full items-center justify-center gap-2 overflow-hidden rounded-xl bg-gradient-to-br from-emerald-500 via-emerald-500 to-teal-500 font-semibold text-white shadow-[0_10px_24px_-8px_rgba(16,185,129,0.55)] transition active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-none disabled:bg-slate-200 disabled:text-slate-400 disabled:shadow-none"
+        className="mt-4 inline-flex h-[52px] w-full items-center justify-center gap-2 rounded-2xl bg-[--color-accent] text-base font-bold text-[--color-accent-fg] shadow-action transition active:scale-[0.99] disabled:cursor-not-allowed disabled:bg-[--color-surface-3] disabled:text-[--color-subtle] disabled:shadow-none"
       >
         <svg
-          width="16"
-          height="16"
           viewBox="0 0 24 24"
+          width="18"
+          height="18"
           fill="none"
           stroke="currentColor"
-          strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
+          strokeWidth="2.5"
           aria-hidden
         >
           <path d="M12 5v14" />
           <path d="M5 12h14" />
         </svg>
-        Save entry
+        Save
       </button>
     </form>
-  );
-}
-
-function EntriesSection({
-  entries,
-  onRemove,
-}: {
-  entries: Entry[];
-  onRemove: (id: string) => void;
-}) {
-  return (
-    <section className="flex flex-col gap-2">
-      <div className="flex items-center justify-between px-1">
-        <h2 className="text-sm font-semibold text-[--color-fg]">Entries</h2>
-        {entries.length > 0 && (
-          <span className="text-[11px] font-semibold tabular-nums text-[--color-subtle]">
-            {entries.length} logged
-          </span>
-        )}
-      </div>
-      {entries.length === 0 ? (
-        <EmptyState />
-      ) : (
-        <ul className="flex flex-col gap-2">
-          {entries.map((e) => (
-            <EntryRow key={e.id} entry={e} onRemove={onRemove} />
-          ))}
-        </ul>
-      )}
-    </section>
-  );
-}
-
-function EmptyState() {
-  return (
-    <div className="card-shadow flex flex-col items-center gap-3 rounded-2xl border border-dashed border-[--color-border-strong] bg-[--color-surface]/60 p-8 text-center">
-      <span className="grid h-11 w-11 place-items-center rounded-full bg-gradient-to-br from-emerald-100 to-sky-100 text-emerald-700">
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
-        >
-          <path d="M12 2v4" />
-          <path d="M12 18v4" />
-          <path d="M4.93 4.93l2.83 2.83" />
-          <path d="M16.24 16.24l2.83 2.83" />
-          <path d="M2 12h4" />
-          <path d="M18 12h4" />
-          <path d="M4.93 19.07l2.83-2.83" />
-          <path d="M16.24 7.76l2.83-2.83" />
-        </svg>
-      </span>
-      <div>
-        <div className="text-sm font-semibold text-[--color-fg]">
-          Nothing logged yet
-        </div>
-        <div className="mt-0.5 text-xs text-[--color-muted]">
-          Add a food above to start your day.
-        </div>
-      </div>
-    </div>
   );
 }
 
@@ -460,7 +382,7 @@ function Field({
 }: {
   label: string;
   value: string;
-  onChange: (v: string) => void;
+  onChange: (value: string) => void;
   placeholder?: string;
   autoFocus?: boolean;
 }) {
@@ -472,11 +394,11 @@ function Field({
       <input
         type="text"
         value={value}
-        onChange={(e) => onChange(e.target.value)}
+        onChange={(event) => onChange(event.target.value)}
         placeholder={placeholder}
-        autoFocus={autoFocus}
         autoComplete="off"
-        className="h-12 w-full rounded-xl border border-[--color-border] bg-[--color-surface-2]/60 px-3.5 text-base text-[--color-fg] placeholder:text-[--color-subtle] outline-none transition focus:border-[--color-accent]/60 focus:bg-[--color-surface] focus:ring-2 focus:ring-[--color-accent]/25"
+        autoFocus={autoFocus}
+        className="h-[52px] w-full rounded-2xl border border-[--color-border] bg-[--color-surface-2] px-4 text-base font-semibold text-[--color-fg] outline-none transition placeholder:text-[--color-subtle] focus:border-[--color-accent] focus:bg-white focus:ring-4 focus:ring-[--color-accent-ring]"
       />
     </label>
   );
@@ -487,24 +409,15 @@ function NumField({
   value,
   onChange,
   unit,
-  accent,
 }: {
   label: string;
   value: string;
-  onChange: (v: string) => void;
-  unit?: string;
-  accent?: string;
+  onChange: (value: string) => void;
+  unit: string;
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-wider text-[--color-muted]">
-        {accent && (
-          <span
-            className="h-1.5 w-1.5 rounded-full"
-            style={{ backgroundColor: accent }}
-            aria-hidden
-          />
-        )}
+      <span className="mb-1.5 block text-[11px] font-bold uppercase tracking-wider text-[--color-muted]">
         {label}
       </span>
       <div className="relative">
@@ -514,25 +427,76 @@ function NumField({
           min="0"
           step="any"
           value={value}
-          onChange={(e) => onChange(e.target.value)}
+          onChange={(event) => onChange(event.target.value)}
           placeholder="0"
-          className="h-12 w-full rounded-xl border border-[--color-border] bg-[--color-surface-2]/60 px-3.5 pr-12 text-base tabular-nums text-[--color-fg] placeholder:text-[--color-subtle] outline-none transition focus:border-[--color-accent]/60 focus:bg-[--color-surface] focus:ring-2 focus:ring-[--color-accent]/25"
-          style={
-            accent
-              ? ({
-                  ["--tw-ring-color" as string]:
-                    "color-mix(in srgb, " + accent + " 30%, transparent)",
-                } as React.CSSProperties)
-              : undefined
-          }
+          className="h-[52px] w-full rounded-2xl border border-[--color-border] bg-[--color-surface-2] px-4 pr-12 text-base font-semibold tabular-nums text-[--color-fg] outline-none transition placeholder:text-[--color-subtle] focus:border-[--color-accent] focus:bg-white focus:ring-4 focus:ring-[--color-accent-ring]"
         />
-        {unit && (
-          <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-[--color-subtle]">
-            {unit}
-          </span>
-        )}
+        <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-[11px] font-bold text-[--color-subtle]">
+          {unit}
+        </span>
       </div>
     </label>
+  );
+}
+
+function EntriesSection({
+  entries,
+  onRemove,
+}: {
+  entries: Entry[];
+  onRemove: (id: string) => void;
+}) {
+  return (
+    <section className="rounded-[2rem] border border-[--color-border] bg-[--color-surface] p-4 shadow-soft sm:sticky sm:top-6">
+      <div className="mb-3 flex items-center justify-between">
+        <h2 className="text-base font-bold text-[--color-fg]">Food log</h2>
+        <span className="text-xs font-semibold tabular-nums text-[--color-muted]">
+          {entries.length} today
+        </span>
+      </div>
+
+      {entries.length === 0 ? (
+        <EmptyState />
+      ) : (
+        <ul className="grid gap-2">
+          {entries.map((entry) => (
+            <EntryRow key={entry.id} entry={entry} onRemove={onRemove} />
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div className="grid min-h-40 place-items-center rounded-3xl border border-dashed border-[--color-border-strong] bg-[--color-surface-2] p-6 text-center">
+      <div>
+        <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white text-[--color-muted] shadow-soft">
+          <svg
+            viewBox="0 0 24 24"
+            width="21"
+            height="21"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2"
+            aria-hidden
+          >
+            <path d="M4 7h16" />
+            <path d="M7 12h10" />
+            <path d="M10 17h4" />
+          </svg>
+        </div>
+        <div className="mt-3 text-sm font-bold text-[--color-fg]">
+          No entries yet
+        </div>
+        <div className="mt-1 text-xs font-medium text-[--color-muted]">
+          Saved foods appear here.
+        </div>
+      </div>
+    </div>
   );
 }
 
@@ -544,60 +508,65 @@ function EntryRow({
   onRemove: (id: string) => void;
 }) {
   return (
-    <li className="card-shadow animate-row-in group flex items-center gap-3 rounded-2xl border border-[--color-border] bg-[--color-surface] px-4 py-3 transition hover:border-[--color-border-strong]">
-      <div className="min-w-0 flex-1">
-        <div className="flex items-baseline justify-between gap-3">
-          <span className="truncate font-semibold text-[--color-fg]">
+    <li className="animate-row-in rounded-3xl border border-[--color-border] bg-[--color-surface-2] p-3">
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <div className="truncate text-sm font-bold text-[--color-fg]">
             {entry.name}
-          </span>
-          <span className="shrink-0 text-sm font-semibold tabular-nums text-[--color-fg]">
+          </div>
+          <div className="mt-1 text-xl font-bold leading-none tabular-nums text-[--color-fg]">
             {Math.round(entry.calories)}
-            <span className="ml-0.5 text-[10px] font-semibold text-[--color-muted]">
+            <span className="ml-1 text-xs font-bold text-[--color-muted]">
               kcal
             </span>
-          </span>
+          </div>
         </div>
-        <div className="mt-1.5 flex items-center gap-2 text-[11px] tabular-nums">
-          <MacroChip macro="protein" value={entry.protein} />
-          <MacroChip macro="carbs" value={entry.carbs} />
-          <MacroChip macro="fats" value={entry.fats} />
-        </div>
-      </div>
-      <button
-        type="button"
-        onClick={() => onRemove(entry.id)}
-        aria-label={`Remove ${entry.name}`}
-        className="grid h-9 w-9 shrink-0 place-items-center rounded-lg border border-[--color-border] bg-[--color-surface] text-[--color-subtle] opacity-70 transition hover:border-rose-300 hover:bg-rose-50 hover:text-rose-600 hover:opacity-100 active:scale-95 group-hover:opacity-100"
-      >
-        <svg
-          width="14"
-          height="14"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          aria-hidden
+
+        <button
+          type="button"
+          onClick={() => onRemove(entry.id)}
+          aria-label={`Remove ${entry.name}`}
+          className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white text-[--color-muted] shadow-soft transition hover:text-[--color-danger] active:scale-95"
         >
-          <path d="M3 6h18" />
-          <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-          <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-        </svg>
-      </button>
+          <svg
+            viewBox="0 0 24 24"
+            width="15"
+            height="15"
+            fill="none"
+            stroke="currentColor"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth="2.3"
+            aria-hidden
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div className="mt-3 flex flex-wrap gap-1.5">
+        {MACROS.map((macro) => (
+          <MacroChip key={macro.key} macro={macro} value={entry[macro.key]} />
+        ))}
+      </div>
     </li>
   );
 }
 
-function MacroChip({ macro, value }: { macro: MacroKey; value: number }) {
-  const theme = MACRO_THEME[macro];
-  const initial = theme.label[0];
+function MacroChip({
+  macro,
+  value,
+}: {
+  macro: (typeof MACROS)[number];
+  value: number;
+}) {
   return (
     <span
-      className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold"
-      style={{ backgroundColor: theme.soft, color: theme.fg }}
+      className="inline-flex h-7 items-center gap-1.5 rounded-full px-2.5 text-[11px] font-bold"
+      style={{ backgroundColor: macro.soft, color: macro.color }}
     >
-      <span>{initial}</span>
+      {macro.short}
       <span className="tabular-nums">
         {round1(value)}
         <span className="opacity-70">g</span>
@@ -606,11 +575,123 @@ function MacroChip({ macro, value }: { macro: MacroKey; value: number }) {
   );
 }
 
-function parseNum(v: string): number {
-  const n = parseFloat(v);
-  return Number.isFinite(n) && n >= 0 ? n : 0;
+function parseStoredEntries(value: string): Entry[] {
+  const parsed: unknown = JSON.parse(value);
+  if (!Array.isArray(parsed)) return [];
+
+  return parsed
+    .filter((entry): entry is Entry => {
+      if (!entry || typeof entry !== "object") return false;
+      const candidate = entry as Record<string, unknown>;
+      return (
+        typeof candidate.id === "string" &&
+        typeof candidate.name === "string" &&
+        typeof candidate.calories === "number" &&
+        typeof candidate.protein === "number" &&
+        typeof candidate.fats === "number" &&
+        typeof candidate.carbs === "number"
+      );
+    })
+    .map((entry) => ({
+      ...entry,
+      calories: clampNumber(entry.calories),
+      protein: clampNumber(entry.protein),
+      fats: clampNumber(entry.fats),
+      carbs: clampNumber(entry.carbs),
+    }));
 }
 
-function round1(n: number): number {
-  return Math.round(n * 10) / 10;
+function createLocalEntryStore(storageKey: string) {
+  const serverSnapshot: Entry[] = [];
+  let lastRaw: string | null = null;
+  let lastParsed: Entry[] = [];
+
+  function getRawSnapshot() {
+    try {
+      return window.localStorage.getItem(storageKey);
+    } catch {
+      return null;
+    }
+  }
+
+  function getSnapshot() {
+    const raw = getRawSnapshot();
+    if (raw === lastRaw) return lastParsed;
+
+    lastRaw = raw;
+    if (!raw) {
+      lastParsed = [];
+      return lastParsed;
+    }
+
+    try {
+      lastParsed = parseStoredEntries(raw);
+    } catch {
+      lastParsed = [];
+    }
+
+    return lastParsed;
+  }
+
+  function setEntries(entries: Entry[]) {
+    const nextRaw = JSON.stringify(entries);
+    lastRaw = nextRaw;
+    lastParsed = entries;
+
+    try {
+      window.localStorage.setItem(storageKey, nextRaw);
+      window.dispatchEvent(new Event("macrometr-storage"));
+    } catch {
+      // A future sync layer can surface storage failures in the UI.
+    }
+  }
+
+  function subscribe(onStoreChange: () => void) {
+    function handleStorage(event: StorageEvent) {
+      if (event.key === storageKey) onStoreChange();
+    }
+
+    window.addEventListener("storage", handleStorage);
+    window.addEventListener("macrometr-storage", onStoreChange);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      window.removeEventListener("macrometr-storage", onStoreChange);
+    };
+  }
+
+  return {
+    getServerSnapshot: () => serverSnapshot,
+    getSnapshot,
+    setEntries,
+    subscribe,
+  };
+}
+
+function getLocalDayKey() {
+  const now = new Date();
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, "0");
+  const day = String(now.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function formatToday() {
+  return new Intl.DateTimeFormat(undefined, {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+  }).format(new Date());
+}
+
+function parseNum(value: string): number {
+  return clampNumber(parseFloat(value));
+}
+
+function clampNumber(value: number): number {
+  return Number.isFinite(value) && value >= 0 ? value : 0;
+}
+
+function round1(value: number): number {
+  return Math.round(value * 10) / 10;
 }
