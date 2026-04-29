@@ -1,29 +1,49 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-bg: #f4f2ec;
-  --color-surface: #ffffff;
-  --color-surface-2: #f7f6f1;
-  --color-surface-3: #e8e5dc;
-  --color-border: #e2ded3;
-  --color-border-strong: #cfc8ba;
-  --color-fg: #191a16;
-  --color-muted: #74766d;
-  --color-subtle: #a3a197;
+  --color-bg: #f6f0e8;
+  --color-surface: #fffaf3;
+  --color-surface-2: #f1eadf;
+  --color-surface-3: #ddd3c5;
+  --color-border: #dfd2c0;
+  --color-border-strong: #c8b8a2;
+  --color-outline: rgba(34, 26, 23, 0.54);
+  --color-fg: #221a17;
+  --color-ink: #221a17;
+  --color-muted: #796f65;
+  --color-muted-strong: #55483d;
+  --color-subtle: #a69a8c;
+  --color-placeholder: #88796a;
+  --color-input-border: #3a2d27;
+  --color-panel-add: #ffe58a;
+  --color-panel-log: #c9efff;
 
-  --color-accent: #0f9f6e;
-  --color-accent-strong: #087a55;
-  --color-accent-soft: #dff5eb;
-  --color-accent-ring: rgba(15, 159, 110, 0.16);
+  --color-lime: #b7f34b;
+  --color-lime-soft: #e9f8c8;
+  --color-lime-ring: rgba(183, 243, 75, 0.32);
+
+  --color-accent: #ff7a59;
+  --color-accent-muted: #df775f;
+  --color-accent-strong: #d65337;
+  --color-accent-soft: #ffe1d8;
+  --color-accent-ring: rgba(255, 122, 89, 0.28);
   --color-accent-fg: #ffffff;
 
-  --color-protein: #3178c6;
-  --color-protein-soft: #e4f0fb;
-  --color-carbs: #b66a22;
-  --color-carbs-soft: #faead7;
-  --color-fats: #c2415d;
-  --color-fats-soft: #f8e1e7;
-  --color-danger: #c72c41;
+  --color-protein: #2868f0;
+  --color-protein-soft: #e7efff;
+  --color-protein-glow: rgba(40, 104, 240, 0.64);
+  --color-carbs: #ff9f1c;
+  --color-carbs-soft: #fff0d6;
+  --color-carbs-glow: rgba(255, 159, 28, 0.64);
+  --color-fats: #e93672;
+  --color-fats-soft: #ffe1eb;
+  --color-fats-glow: rgba(233, 54, 114, 0.64);
+
+  --color-blush: #ffd6e0;
+  --color-sky: #1e8cbf;
+  --color-sky-soft: #d9f3ff;
+  --color-danger: #c92d43;
+  --color-danger-soft: #ffe0e5;
 
   --font-sans: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
@@ -37,7 +57,10 @@
 html,
 body {
   min-height: 100%;
-  background: var(--color-bg);
+  background:
+    radial-gradient(circle at 12% 0%, rgba(183, 243, 75, 0.34), transparent 28rem),
+    radial-gradient(circle at 92% 10%, rgba(255, 122, 89, 0.2), transparent 26rem),
+    linear-gradient(145deg, #fff9ee 0%, var(--color-bg) 48%, #edf5f1 100%);
   color: var(--color-fg);
   color-scheme: light;
 }
@@ -48,9 +71,29 @@ body {
   -webkit-tap-highlight-color: transparent;
 }
 
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-image:
+    linear-gradient(rgba(34, 26, 23, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 26, 23, 0.035) 1px, transparent 1px);
+  background-size: 28px 28px;
+  content: "";
+  mask-image: linear-gradient(to bottom, black, transparent 72%);
+}
+
 button,
 input {
   font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+button:disabled {
+  cursor: not-allowed;
 }
 
 input[type="number"]::-webkit-outer-spin-button,
@@ -66,7 +109,7 @@ input[type="number"] {
 @keyframes row-in {
   from {
     opacity: 0;
-    transform: translateY(6px) scale(0.98);
+    transform: translateY(10px) scale(0.97);
   }
   to {
     opacity: 1;
@@ -75,25 +118,117 @@ input[type="number"] {
 }
 
 .animate-row-in {
-  animation: row-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  animation: row-in 220ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
 }
 
 .bar-segment {
-  transition: flex-grow 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  transition: flex-grow 340ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.quick-chip:hover {
+  background: var(--color-lime-soft);
+  border-color: var(--color-fg);
+  transform: translateY(-1px);
+}
+
+.primary-submit {
+  background: var(--color-accent);
+  box-shadow:
+    0 1px 1px rgba(34, 26, 23, 0.12),
+    0 12px 24px -12px rgba(255, 122, 89, 0.72),
+    0 18px 36px -24px rgba(34, 26, 23, 0.42);
+  color: #ffffff;
+}
+
+.primary-submit:disabled {
+  background: var(--color-accent-muted);
+  box-shadow:
+    0 1px 1px rgba(34, 26, 23, 0.12),
+    0 12px 24px -18px rgba(34, 26, 23, 0.48);
+  color: #ffffff;
+  cursor: not-allowed;
+  opacity: 1;
+}
+
+.dashboard-card {
+  background:
+    radial-gradient(circle at 85% 14%, rgba(183, 243, 75, 0.22), transparent 9rem),
+    radial-gradient(circle at 10% 90%, rgba(255, 122, 89, 0.18), transparent 9rem),
+    #221a17;
+}
+
+.panel-add {
+  background: #ffe58a;
+}
+
+.panel-log {
+  background: #c9efff;
+}
+
+.dashboard-glow {
+  position: absolute;
+  pointer-events: none;
+  border-radius: 999px;
+  filter: blur(2px);
+  opacity: 0.55;
+}
+
+.dashboard-glow-one {
+  right: -3rem;
+  top: -4rem;
+  height: 12rem;
+  width: 12rem;
+  background: rgba(183, 243, 75, 0.22);
+}
+
+.dashboard-glow-two {
+  bottom: -5rem;
+  left: -4rem;
+  height: 13rem;
+  width: 13rem;
+  background: rgba(255, 122, 89, 0.14);
 }
 
 .shadow-soft {
   box-shadow:
-    0 1px 2px rgba(25, 26, 22, 0.04),
-    0 10px 24px -18px rgba(25, 26, 22, 0.28);
+    0 1px 1px rgba(34, 26, 23, 0.04),
+    0 10px 24px -18px rgba(34, 26, 23, 0.32);
 }
 
-.shadow-panel {
+.shadow-input {
   box-shadow:
-    0 16px 34px -22px rgba(25, 26, 22, 0.5),
-    0 2px 4px rgba(25, 26, 22, 0.08);
+    inset 0 1px 2px rgba(34, 26, 23, 0.08),
+    0 1px 1px rgba(255, 255, 255, 0.9),
+    0 8px 18px -18px rgba(34, 26, 23, 0.38);
 }
 
-.shadow-action {
-  box-shadow: 0 12px 22px -12px rgba(15, 159, 110, 0.7);
+.shadow-float {
+  box-shadow:
+    0 1px 1px rgba(34, 26, 23, 0.05),
+    0 14px 36px -24px rgba(34, 26, 23, 0.42);
+}
+
+.shadow-playful {
+  box-shadow:
+    0 1px 2px rgba(34, 26, 23, 0.12),
+    0 14px 30px -18px rgba(34, 26, 23, 0.42),
+    0 28px 54px -36px rgba(34, 26, 23, 0.26);
+}
+
+.shadow-pop {
+  box-shadow:
+    0 2px 4px rgba(34, 26, 23, 0.12),
+    0 12px 26px -18px rgba(34, 26, 23, 0.5);
+}
+
+.shadow-pop-small {
+  box-shadow:
+    0 1px 2px rgba(34, 26, 23, 0.12),
+    0 8px 18px -14px rgba(34, 26, 23, 0.42);
+}
+
+.shadow-deep {
+  box-shadow:
+    0 20px 44px -26px rgba(34, 26, 23, 0.72),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
 }
