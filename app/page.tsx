@@ -60,6 +60,7 @@ const quickFoods: FormState[] = [
 
 const KCAL_PER_G = { protein: 4, carbs: 4, fats: 9 } as const;
 const STORAGE_PREFIX = "macrometr:entries";
+const DAILY_CALORIE_GOAL = 2000;
 
 type MacroKey = "protein" | "carbs" | "fats";
 
@@ -123,16 +124,6 @@ export default function Home() {
     [entries],
   );
 
-  const formCalories = useMemo(() => {
-    const enteredCalories = parseNum(form.calories);
-    if (enteredCalories > 0) return enteredCalories;
-    return (
-      parseNum(form.protein) * KCAL_PER_G.protein +
-      parseNum(form.carbs) * KCAL_PER_G.carbs +
-      parseNum(form.fats) * KCAL_PER_G.fats
-    );
-  }, [form]);
-
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
 
@@ -161,10 +152,9 @@ export default function Home() {
       <div className="mx-auto grid w-full max-w-md gap-4 sm:max-w-5xl lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
         <div className="grid gap-4">
           <Header entryCount={entries.length} />
-          <TodayCard totals={totals} count={entries.length} />
+          <TodayCard totals={totals} />
           <EntryComposer
             form={form}
-            formCalories={formCalories}
             setForm={setForm}
             onSubmit={handleSubmit}
           />
@@ -222,10 +212,8 @@ function LogoMark() {
 
 function TodayCard({
   totals,
-  count,
 }: {
   totals: { calories: number; protein: number; fats: number; carbs: number };
-  count: number;
 }) {
   const proteinKcal = totals.protein * KCAL_PER_G.protein;
   const carbsKcal = totals.carbs * KCAL_PER_G.carbs;
@@ -252,11 +240,13 @@ function TodayCard({
             <span className="text-[4.3rem] font-black leading-[0.82] tracking-tight tabular-nums sm:text-7xl">
               {Math.round(totals.calories)}
             </span>
-            <span className="pb-1.5 text-sm font-black text-white/80">kcal</span>
+            <span className="pb-1.5 text-sm font-black text-white/80">
+              / {DAILY_CALORIE_GOAL} kcal
+            </span>
           </div>
         </div>
 
-        <CalorieOrb count={count} calories={totals.calories} />
+        <CalorieOrb calories={totals.calories} goal={DAILY_CALORIE_GOAL} />
       </div>
 
       <div className="relative mt-5">
@@ -277,13 +267,17 @@ function TodayCard({
   );
 }
 
-function CalorieOrb({ count, calories }: { count: number; calories: number }) {
-  const progress = Math.min(Math.round((calories / 2400) * 100), 100);
+function CalorieOrb({ calories, goal }: { calories: number; goal: number }) {
+  const progress = Math.min(Math.round((calories / goal) * 100), 100);
   const circumference = 2 * Math.PI * 38;
   const offset = circumference - (progress / 100) * circumference;
 
   return (
-    <div className="relative grid h-28 w-28 shrink-0 place-items-center rounded-full border border-white/25 bg-white/15 backdrop-blur">
+    <div
+      aria-label={`${Math.round(calories)} of ${goal} calories`}
+      className="relative grid h-28 w-28 shrink-0 place-items-center rounded-full border border-white/25 bg-white/15 backdrop-blur"
+      role="img"
+    >
       <svg viewBox="0 0 100 100" className="absolute h-full w-full -rotate-90">
         <circle
           cx="50"
@@ -305,12 +299,6 @@ function CalorieOrb({ count, calories }: { count: number; calories: number }) {
           strokeDashoffset={offset}
         />
       </svg>
-      <div className="text-center">
-        <div className="text-2xl font-black tabular-nums">{count}</div>
-        <div className="text-[10px] font-black uppercase tracking-widest text-white/75">
-          foods
-        </div>
-      </div>
     </div>
   );
 }
@@ -376,12 +364,10 @@ function MacroStat({
 
 function EntryComposer({
   form,
-  formCalories,
   setForm,
   onSubmit,
 }: {
   form: FormState;
-  formCalories: number;
   setForm: (form: FormState) => void;
   onSubmit: (event: React.FormEvent<HTMLFormElement>) => void;
 }) {
@@ -397,14 +383,6 @@ function EntryComposer({
           <h1 className="text-lg font-black tracking-tight">Quick add</h1>
           <div className="text-xs font-bold text-[--color-muted-strong]">
             Tap, type, save, done.
-          </div>
-        </div>
-        <div className="rounded-2xl border border-[--color-outline] bg-[--color-lime-soft] px-3 py-2 text-right shadow-pop-small">
-          <div className="text-xl font-black leading-none tabular-nums">
-            {Math.round(formCalories)}
-          </div>
-          <div className="text-[10px] font-black uppercase tracking-widest text-[--color-muted-strong]">
-            preview
           </div>
         </div>
       </div>
