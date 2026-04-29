@@ -4,11 +4,27 @@ import { useMemo, useState, useSyncExternalStore } from "react";
 
 type Entry = {
   id: string;
+  date: string;
   name: string;
   calories: number;
   protein: number;
   fats: number;
   carbs: number;
+  createdAt: string;
+  updatedAt: string;
+};
+
+type DailyLog = {
+  id: string;
+  date: string;
+  entries: Entry[];
+  createdAt: string;
+  updatedAt: string;
+};
+
+type AppData = {
+  schemaVersion: 1;
+  dailyLogs: Record<string, DailyLog>;
 };
 
 type FormState = {
@@ -59,7 +75,8 @@ const quickFoods: FormState[] = [
 ];
 
 const KCAL_PER_G = { protein: 4, carbs: 4, fats: 9 } as const;
-const STORAGE_PREFIX = "macrometr:entries";
+const APP_STORAGE_KEY = "macrometr:v1";
+const LEGACY_ENTRIES_PREFIX = "macrometr:entries:";
 const DAILY_CALORIE_GOAL = 2000;
 
 type MacroKey = "protein" | "carbs" | "fats";
@@ -100,14 +117,17 @@ const MACROS: Array<{
 
 export default function Home() {
   const [form, setForm] = useState<FormState>(emptyForm);
+  const [selectedDate, setSelectedDate] = useState(() => getLocalDayKey());
 
-  const todayKey = useMemo(() => getLocalDayKey(), []);
-  const storageKey = `${STORAGE_PREFIX}:${todayKey}`;
-  const entryStore = useMemo(() => createLocalEntryStore(storageKey), [storageKey]);
-  const entries = useSyncExternalStore(
-    entryStore.subscribe,
-    entryStore.getSnapshot,
-    entryStore.getServerSnapshot,
+  const appStore = useMemo(() => createLocalAppStore(), []);
+  const appData = useSyncExternalStore(
+    appStore.subscribe,
+    appStore.getSnapshot,
+    appStore.getServerSnapshot,
+  );
+  const entries = useMemo(
+    () => appData.dailyLogs[selectedDate]?.entries ?? [],
+    [appData.dailyLogs, selectedDate],
   );
 
   const totals = useMemo(
@@ -130,28 +150,46 @@ export default function Home() {
     const name = form.name.trim();
     if (!name) return;
 
+    const now = new Date().toISOString();
     const entry: Entry = {
       id: crypto.randomUUID(),
+      date: selectedDate,
       name,
       calories: parseNum(form.calories),
       protein: parseNum(form.protein),
       fats: parseNum(form.fats),
       carbs: parseNum(form.carbs),
+      createdAt: now,
+      updatedAt: now,
     };
 
-    entryStore.setEntries([entry, ...entries]);
+    appStore.setEntriesForDate(selectedDate, [entry, ...entries]);
     setForm(emptyForm);
   }
 
   function removeEntry(id: string) {
-    entryStore.setEntries(entries.filter((entry) => entry.id !== id));
+    appStore.setEntriesForDate(
+      selectedDate,
+      entries.filter((entry) => entry.id !== id),
+    );
+  }
+
+  function moveSelectedDate(days: number) {
+    setSelectedDate((date) => shiftDateKey(date, days));
   }
 
   return (
     <main className="min-h-dvh overflow-hidden px-4 pb-8 pt-[calc(env(safe-area-inset-top)+14px)] text-[--color-fg]">
       <div className="mx-auto grid w-full max-w-md gap-4 sm:max-w-5xl lg:grid-cols-[1.05fr_0.95fr] lg:items-start">
         <div className="grid gap-4">
-          <Header entryCount={entries.length} />
+          <Header
+            entryCount={entries.length}
+            selectedDate={selectedDate}
+            onDateChange={setSelectedDate}
+            onPrevDay={() => moveSelectedDate(-1)}
+            onNextDay={() => moveSelectedDate(1)}
+            onToday={() => setSelectedDate(getLocalDayKey())}
+          />
           <TodayCard totals={totals} />
           <EntryComposer
             form={form}
@@ -160,30 +198,130 @@ export default function Home() {
           />
         </div>
 
-        <EntriesSection entries={entries} onRemove={removeEntry} />
+        <EntriesSection
+          entries={entries}
+          onRemove={removeEntry}
+          selectedDate={selectedDate}
+        />
       </div>
     </main>
   );
 }
 
-function Header({ entryCount }: { entryCount: number }) {
+function Header({
+  entryCount,
+  selectedDate,
+  onDateChange,
+  onPrevDay,
+  onNextDay,
+  onToday,
+}: {
+  entryCount: number;
+  selectedDate: string;
+  onDateChange: (date: string) => void;
+  onPrevDay: () => void;
+  onNextDay: () => void;
+  onToday: () => void;
+}) {
   return (
-    <header className="flex items-center justify-between">
+    <header className="grid gap-3 sm:flex sm:items-center sm:justify-between">
       <div className="flex items-center gap-3">
         <LogoMark />
         <div>
           <div className="text-xl font-black tracking-tight">MacroMetr</div>
           <div className="text-xs font-bold text-[--color-muted]">
-            {formatToday()}
+            {formatDay(selectedDate)}
           </div>
         </div>
       </div>
 
-      <div className="inline-flex h-10 items-center gap-2 rounded-full border border-[--color-outline] bg-[--color-surface] px-3 text-xs font-black tabular-nums text-[--color-fg] shadow-pop-small">
-        <span className="h-2 w-2 rounded-full bg-[--color-lime]" />
-        {entryCount} logged
+      <div className="flex flex-wrap items-center gap-2 sm:justify-end">
+        <DateNavigator
+          selectedDate={selectedDate}
+          onDateChange={onDateChange}
+          onPrevDay={onPrevDay}
+          onNextDay={onNextDay}
+          onToday={onToday}
+        />
+        <div className="inline-flex h-10 items-center gap-2 rounded-full border border-[--color-outline] bg-[--color-surface] px-3 text-xs font-black tabular-nums text-[--color-fg] shadow-pop-small">
+          <span className="h-2 w-2 rounded-full bg-[--color-lime]" />
+          {entryCount} logged
+        </div>
       </div>
     </header>
+  );
+}
+
+function DateNavigator({
+  selectedDate,
+  onDateChange,
+  onPrevDay,
+  onNextDay,
+  onToday,
+}: {
+  selectedDate: string;
+  onDateChange: (date: string) => void;
+  onPrevDay: () => void;
+  onNextDay: () => void;
+  onToday: () => void;
+}) {
+  return (
+    <div className="inline-flex h-10 items-center gap-1 rounded-full border border-[--color-outline] bg-[--color-surface] p-1 shadow-pop-small">
+      <button
+        type="button"
+        onClick={onPrevDay}
+        aria-label="Previous day"
+        className="grid h-8 w-8 place-items-center rounded-full text-[--color-fg] transition hover:bg-[--color-bg] active:scale-95"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2.7"
+          aria-hidden
+        >
+          <path d="m15 18-6-6 6-6" />
+        </svg>
+      </button>
+      <input
+        type="date"
+        value={selectedDate}
+        onChange={(event) => onDateChange(event.target.value || getLocalDayKey())}
+        aria-label="Selected log date"
+        className="h-8 w-32 rounded-full bg-transparent px-1 text-xs font-black tabular-nums text-[--color-fg] outline-none"
+      />
+      <button
+        type="button"
+        onClick={onNextDay}
+        aria-label="Next day"
+        className="grid h-8 w-8 place-items-center rounded-full text-[--color-fg] transition hover:bg-[--color-bg] active:scale-95"
+      >
+        <svg
+          viewBox="0 0 24 24"
+          width="16"
+          height="16"
+          fill="none"
+          stroke="currentColor"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth="2.7"
+          aria-hidden
+        >
+          <path d="m9 18 6-6-6-6" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        onClick={onToday}
+        className="h-8 rounded-full bg-[--color-fg] px-3 text-xs font-black text-black transition active:scale-95"
+      >
+        Today
+      </button>
+    </div>
   );
 }
 
@@ -440,7 +578,7 @@ function EntryComposer({
           <path d="M12 5v14" />
           <path d="M5 12h14" />
         </svg>
-        Add to today
+        Add to day
       </button>
     </form>
   );
@@ -532,9 +670,11 @@ function NumField({
 function EntriesSection({
   entries,
   onRemove,
+  selectedDate,
 }: {
   entries: Entry[];
   onRemove: (id: string) => void;
+  selectedDate: string;
 }) {
   return (
     <section
@@ -542,9 +682,9 @@ function EntriesSection({
     >
       <div className="relative flex items-center justify-between">
         <div>
-          <h2 className="text-lg font-black tracking-tight">Today&apos;s log</h2>
+          <h2 className="text-lg font-black tracking-tight">Day log</h2>
           <div className="text-xs font-bold text-white/70">
-            Swipe the day forward, one food at a time.
+            {formatDay(selectedDate)}
           </div>
         </div>
         <span className="rounded-full border border-white/14 bg-white/12 px-3 py-1.5 text-xs font-black text-white shadow-pop-small">
@@ -668,7 +808,7 @@ function MacroPill({
   );
 }
 
-function parseStoredEntries(value: string): Entry[] {
+function parseStoredEntries(value: string, date: string): Entry[] {
   const parsed: unknown = JSON.parse(value);
   if (!Array.isArray(parsed)) return [];
 
@@ -687,21 +827,98 @@ function parseStoredEntries(value: string): Entry[] {
     })
     .map((entry) => ({
       ...entry,
+      date,
       calories: clampNumber(entry.calories),
       protein: clampNumber(entry.protein),
       fats: clampNumber(entry.fats),
       carbs: clampNumber(entry.carbs),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
     }));
 }
 
-function createLocalEntryStore(storageKey: string) {
-  const serverSnapshot: Entry[] = [];
-  let lastRaw: string | null = null;
-  let lastParsed: Entry[] = [];
+function createEmptyAppData(): AppData {
+  return {
+    schemaVersion: 1,
+    dailyLogs: {},
+  };
+}
+
+function parseStoredAppData(value: string | null): AppData {
+  if (!value) return createEmptyAppData();
+
+  const parsed: unknown = JSON.parse(value);
+  if (!parsed || typeof parsed !== "object") return createEmptyAppData();
+
+  const candidate = parsed as Record<string, unknown>;
+  if (
+    candidate.schemaVersion !== 1 ||
+    !candidate.dailyLogs ||
+    typeof candidate.dailyLogs !== "object"
+  ) {
+    return createEmptyAppData();
+  }
+
+  const dailyLogs: Record<string, DailyLog> = {};
+  for (const [date, value] of Object.entries(candidate.dailyLogs as Record<string, unknown>)) {
+    if (!isDayKey(date) || !value || typeof value !== "object") continue;
+    const log = value as Record<string, unknown>;
+    const entries = Array.isArray(log.entries)
+      ? log.entries.filter(isStoredEntry).map((entry) => normalizeEntry(entry, date))
+      : [];
+
+    dailyLogs[date] = {
+      id: typeof log.id === "string" ? log.id : createDailyLogId(date),
+      date,
+      entries,
+      createdAt:
+        typeof log.createdAt === "string" ? log.createdAt : new Date().toISOString(),
+      updatedAt:
+        typeof log.updatedAt === "string" ? log.updatedAt : new Date().toISOString(),
+    };
+  }
+
+  return {
+    schemaVersion: 1,
+    dailyLogs,
+  };
+}
+
+function isStoredEntry(entry: unknown): entry is Entry {
+  if (!entry || typeof entry !== "object") return false;
+  const candidate = entry as Record<string, unknown>;
+  return (
+    typeof candidate.id === "string" &&
+    typeof candidate.name === "string" &&
+    typeof candidate.calories === "number" &&
+    typeof candidate.protein === "number" &&
+    typeof candidate.fats === "number" &&
+    typeof candidate.carbs === "number"
+  );
+}
+
+function normalizeEntry(entry: Entry, date: string): Entry {
+  const now = new Date().toISOString();
+  return {
+    ...entry,
+    date: isDayKey(entry.date) ? entry.date : date,
+    calories: clampNumber(entry.calories),
+    protein: clampNumber(entry.protein),
+    fats: clampNumber(entry.fats),
+    carbs: clampNumber(entry.carbs),
+    createdAt: typeof entry.createdAt === "string" ? entry.createdAt : now,
+    updatedAt: typeof entry.updatedAt === "string" ? entry.updatedAt : now,
+  };
+}
+
+function createLocalAppStore() {
+  const serverSnapshot = createEmptyAppData();
+  let lastRaw: string | null | undefined;
+  let lastParsed = createEmptyAppData();
 
   function getRawSnapshot() {
     try {
-      return window.localStorage.getItem(storageKey);
+      return window.localStorage.getItem(APP_STORAGE_KEY);
     } catch {
       return null;
     }
@@ -712,36 +929,59 @@ function createLocalEntryStore(storageKey: string) {
     if (raw === lastRaw) return lastParsed;
 
     lastRaw = raw;
-    if (!raw) {
-      lastParsed = [];
-      return lastParsed;
-    }
-
     try {
-      lastParsed = parseStoredEntries(raw);
+      lastParsed = mergeLegacyLogs(parseStoredAppData(raw));
     } catch {
-      lastParsed = [];
+      lastParsed = mergeLegacyLogs(createEmptyAppData());
     }
 
     return lastParsed;
   }
 
-  function setEntries(entries: Entry[]) {
-    const nextRaw = JSON.stringify(entries);
+  function setAppData(data: AppData) {
+    const nextRaw = JSON.stringify(data);
     lastRaw = nextRaw;
-    lastParsed = entries;
+    lastParsed = data;
 
     try {
-      window.localStorage.setItem(storageKey, nextRaw);
+      window.localStorage.setItem(APP_STORAGE_KEY, nextRaw);
       window.dispatchEvent(new Event("macrometr-storage"));
     } catch {
       // A future sync layer can surface storage failures in the UI.
     }
   }
 
+  function setEntriesForDate(date: string, entries: Entry[]) {
+    const current = getSnapshot();
+    const now = new Date().toISOString();
+    const existing = current.dailyLogs[date];
+    const nextLog: DailyLog = {
+      id: existing?.id ?? createDailyLogId(date),
+      date,
+      entries: entries.map((entry) => ({
+        ...entry,
+        date,
+        updatedAt: entry.updatedAt || now,
+        createdAt: entry.createdAt || now,
+      })),
+      createdAt: existing?.createdAt ?? now,
+      updatedAt: now,
+    };
+
+    setAppData({
+      schemaVersion: 1,
+      dailyLogs: {
+        ...current.dailyLogs,
+        [date]: nextLog,
+      },
+    });
+  }
+
   function subscribe(onStoreChange: () => void) {
     function handleStorage(event: StorageEvent) {
-      if (event.key === storageKey) onStoreChange();
+      if (event.key === APP_STORAGE_KEY || event.key?.startsWith(LEGACY_ENTRIES_PREFIX)) {
+        onStoreChange();
+      }
     }
 
     window.addEventListener("storage", handleStorage);
@@ -756,9 +996,50 @@ function createLocalEntryStore(storageKey: string) {
   return {
     getServerSnapshot: () => serverSnapshot,
     getSnapshot,
-    setEntries,
+    setEntriesForDate,
     subscribe,
   };
+}
+
+function mergeLegacyLogs(data: AppData): AppData {
+  if (typeof window === "undefined") return data;
+
+  const dailyLogs = { ...data.dailyLogs };
+  let changed = false;
+
+  try {
+    for (let index = 0; index < window.localStorage.length; index += 1) {
+      const key = window.localStorage.key(index);
+      if (!key?.startsWith(LEGACY_ENTRIES_PREFIX)) continue;
+
+      const date = key.slice(LEGACY_ENTRIES_PREFIX.length);
+      if (!isDayKey(date) || dailyLogs[date]) continue;
+
+      const rawEntries = window.localStorage.getItem(key);
+      const entries = rawEntries ? parseStoredEntries(rawEntries, date) : [];
+      if (entries.length === 0) continue;
+
+      const now = new Date().toISOString();
+      dailyLogs[date] = {
+        id: createDailyLogId(date),
+        date,
+        entries,
+        createdAt: now,
+        updatedAt: now,
+      };
+      changed = true;
+    }
+
+    if (changed) {
+      const migrated = { schemaVersion: 1 as const, dailyLogs };
+      window.localStorage.setItem(APP_STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    }
+  } catch {
+    return data;
+  }
+
+  return data;
 }
 
 function getLocalDayKey() {
@@ -769,12 +1050,38 @@ function getLocalDayKey() {
   return `${year}-${month}-${day}`;
 }
 
-function formatToday() {
+function shiftDateKey(date: string, days: number) {
+  const shifted = createLocalDate(date);
+  shifted.setDate(shifted.getDate() + days);
+  return toDayKey(shifted);
+}
+
+function createLocalDate(date: string) {
+  const [year, month, day] = date.split("-").map(Number);
+  return new Date(year, month - 1, day);
+}
+
+function toDayKey(date: Date) {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
+}
+
+function isDayKey(value: unknown): value is string {
+  return typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value);
+}
+
+function createDailyLogId(date: string) {
+  return `daily-log:${date}`;
+}
+
+function formatDay(date: string) {
   return new Intl.DateTimeFormat(undefined, {
     weekday: "short",
     month: "short",
     day: "numeric",
-  }).format(new Date());
+  }).format(createLocalDate(date));
 }
 
 function parseNum(value: string): number {
