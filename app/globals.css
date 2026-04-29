@@ -126,7 +126,7 @@ input[type="number"] {
 }
 
 .quick-chip:hover {
-  background: var(--color-lime-soft);
+  background: rgba(255, 255, 255, 0.18);
 }
 
 .quick-scroll {
@@ -137,38 +137,107 @@ input[type="number"] {
   display: none;
 }
 
-.primary-submit {
-  background: var(--color-accent);
-  box-shadow:
-    0 1px 1px rgba(34, 26, 23, 0.12),
-    0 12px 24px -12px rgba(255, 122, 89, 0.72),
-    0 18px 36px -24px rgba(34, 26, 23, 0.42);
-  color: #ffffff;
-}
+@layer components {
+  .app-card {
+    position: relative;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background:
+      radial-gradient(
+        circle at var(--glow-one-x, 86%) var(--glow-one-y, 13%),
+        var(--glow-one-color, rgba(183, 243, 75, 0.14)),
+        transparent var(--glow-one-size, 9rem)
+      ),
+      radial-gradient(
+        circle at var(--glow-two-x, 12%) var(--glow-two-y, 88%),
+        var(--glow-two-color, rgba(255, 122, 89, 0.1)),
+        transparent var(--glow-two-size, 9rem)
+      ),
+      #221a17;
+  }
 
-.primary-submit:disabled {
-  background: var(--color-accent-muted);
-  box-shadow:
-    0 1px 1px rgba(34, 26, 23, 0.12),
-    0 12px 24px -18px rgba(34, 26, 23, 0.48);
-  color: #ffffff;
-  cursor: not-allowed;
-  opacity: 1;
-}
+  .app-card-daily {
+    --glow-one-x: 86%;
+    --glow-one-y: 13%;
+    --glow-one-color: rgba(183, 243, 75, 0.12);
+    --glow-one-size: 9rem;
+    --glow-two-x: 12%;
+    --glow-two-y: 88%;
+    --glow-two-color: rgba(255, 122, 89, 0.09);
+    --glow-two-size: 9rem;
+  }
 
-.dashboard-card {
-  background:
-    radial-gradient(circle at 85% 14%, rgba(183, 243, 75, 0.22), transparent 9rem),
-    radial-gradient(circle at 10% 90%, rgba(255, 122, 89, 0.18), transparent 9rem),
-    #221a17;
-}
+  .app-card-add {
+    --glow-one-x: 16%;
+    --glow-one-y: 22%;
+    --glow-one-color: rgba(255, 159, 28, 0.1);
+    --glow-one-size: 8rem;
+    --glow-two-x: 94%;
+    --glow-two-y: 82%;
+    --glow-two-color: rgba(40, 104, 240, 0.09);
+    --glow-two-size: 9rem;
+  }
 
-.panel-add {
-  background: #ffe58a;
-}
+  .app-card-log {
+    --glow-one-x: 82%;
+    --glow-one-y: 18%;
+    --glow-one-color: rgba(233, 54, 114, 0.09);
+    --glow-one-size: 8rem;
+    --glow-two-x: 10%;
+    --glow-two-y: 76%;
+    --glow-two-color: rgba(183, 243, 75, 0.1);
+    --glow-two-size: 10rem;
+  }
 
-.panel-log {
-  background: #c9efff;
+  .app-field-input {
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.14);
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.22),
+      0 1px 0 rgba(255, 255, 255, 0.08),
+      0 10px 20px -18px rgba(0, 0, 0, 0.75);
+    color: #ffffff;
+  }
+
+  .app-field-input::placeholder {
+    color: rgba(255, 255, 255, 0.58);
+  }
+
+  .app-field-input:focus {
+    border-color: rgba(183, 243, 75, 0.62);
+    background: rgba(255, 255, 255, 0.18);
+    box-shadow:
+      inset 0 1px 2px rgba(0, 0, 0, 0.18),
+      0 0 0 4px rgba(183, 243, 75, 0.14);
+  }
+
+  .app-field-unit {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.72);
+  }
+
+  .app-button-primary {
+    border: 1px solid rgba(183, 243, 75, 0.28);
+    background: rgba(183, 243, 75, 0.14);
+    box-shadow:
+      0 1px 1px rgba(0, 0, 0, 0.18),
+      0 14px 28px -22px rgba(183, 243, 75, 0.58);
+    color: #ffffff;
+  }
+
+  .app-button-primary:not(:disabled):hover {
+    background: rgba(183, 243, 75, 0.2);
+    border-color: rgba(183, 243, 75, 0.42);
+  }
+
+  .app-button-primary:disabled {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: none;
+    color: rgba(255, 255, 255, 0.52);
+    cursor: not-allowed;
+    opacity: 1;
+  }
 }
 
 .dashboard-glow {
@@ -176,7 +245,7 @@ input[type="number"] {
   pointer-events: none;
   border-radius: 999px;
   filter: blur(2px);
-  opacity: 0.55;
+  opacity: 0.36;
 }
 
 .dashboard-glow-one {
@@ -184,7 +253,7 @@ input[type="number"] {
   top: -4rem;
   height: 12rem;
   width: 12rem;
-  background: rgba(183, 243, 75, 0.22);
+  background: rgba(183, 243, 75, 0.14);
 }
 
 .dashboard-glow-two {
@@ -192,7 +261,7 @@ input[type="number"] {
   left: -4rem;
   height: 13rem;
   width: 13rem;
-  background: rgba(255, 122, 89, 0.14);
+  background: rgba(255, 122, 89, 0.1);
 }
 
 .shadow-soft {

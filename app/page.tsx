@@ -227,10 +227,7 @@ function TodayCard({
   };
 
   return (
-    <section className="dashboard-card relative overflow-hidden rounded-[2.2rem] p-5 text-white shadow-deep">
-      <div className="dashboard-glow dashboard-glow-one" />
-      <div className="dashboard-glow dashboard-glow-two" />
-
+    <section className="app-card app-card-daily rounded-[2.2rem] p-5 text-white shadow-deep">
       <div className="relative flex items-start justify-between gap-4">
         <div>
           <div className="text-xs font-black uppercase tracking-[0.18em] text-white/75">
@@ -376,12 +373,12 @@ function EntryComposer({
   return (
     <form
       onSubmit={onSubmit}
-      className="panel-add rounded-[2.2rem] border border-[--color-outline] p-4 shadow-playful"
+      className="app-card app-card-add rounded-[2.2rem] p-4 text-white shadow-deep"
     >
-      <div className="flex items-center justify-between gap-3">
+      <div className="relative flex items-center justify-between gap-3">
         <div>
           <h1 className="text-lg font-black tracking-tight">Quick add</h1>
-          <div className="text-xs font-bold text-[--color-muted-strong]">
+          <div className="text-xs font-bold text-white/70">
             Tap, type, save, done.
           </div>
         </div>
@@ -427,7 +424,7 @@ function EntryComposer({
       <button
         type="submit"
         disabled={!canSubmit}
-        className="primary-submit mt-4 inline-flex h-16 w-full items-center justify-center gap-2 rounded-[1.35rem] border border-[--color-outline] text-lg font-black transition hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99]"
+        className="app-button-primary mt-4 inline-flex h-16 w-full items-center justify-center gap-2 rounded-[1.35rem] text-lg font-black transition active:scale-[0.99]"
       >
         <svg
           viewBox="0 0 24 24"
@@ -457,7 +454,7 @@ function QuickFill({ onSelect }: { onSelect: (form: FormState) => void }) {
           key={food.name}
           type="button"
           onClick={() => onSelect(food)}
-          className="quick-chip shrink-0 rounded-full border border-[--color-outline] bg-[--color-surface] px-3.5 py-2 text-xs font-black leading-none text-[--color-fg] shadow-pop-small transition-colors active:scale-95"
+          className="quick-chip shrink-0 rounded-full border border-white/14 bg-white/10 px-3.5 py-2 text-xs font-black leading-none text-white shadow-pop-small transition-colors active:scale-95"
         >
           {food.name}
         </button>
@@ -481,7 +478,7 @@ function Field({
 }) {
   return (
     <label className="mt-2 block">
-      <span className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-[--color-muted-strong]">
+      <span className="mb-1.5 block text-[11px] font-black uppercase tracking-wider text-white/75">
         {label}
       </span>
       <input
@@ -491,7 +488,7 @@ function Field({
         placeholder={placeholder}
         autoComplete="off"
         autoFocus={autoFocus}
-        className="h-14 w-full rounded-[1.35rem] border-2 border-[--color-input-border] bg-white px-4 text-base font-black text-[--color-fg] shadow-input outline-none transition placeholder:text-[--color-placeholder] focus:border-[--color-accent] focus:bg-white focus:ring-4 focus:ring-[--color-accent-ring]"
+        className="app-field-input h-14 w-full rounded-[1.35rem] px-4 text-base font-black outline-none transition"
       />
     </label>
   );
@@ -510,7 +507,7 @@ function NumField({
 }) {
   return (
     <label className="block">
-      <span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-[--color-muted-strong]">
+      <span className="mb-1.5 block text-[10px] font-black uppercase tracking-wider text-white/75">
         {label}
       </span>
       <div className="relative">
@@ -522,9 +519,9 @@ function NumField({
           value={value}
           onChange={(event) => onChange(event.target.value)}
           placeholder="0"
-          className="h-[58px] w-full rounded-[1.25rem] border-2 border-[--color-input-border] bg-white px-3.5 pr-11 text-lg font-black tabular-nums text-[--color-fg] shadow-input outline-none transition placeholder:text-[--color-placeholder] focus:border-[--color-accent] focus:bg-white focus:ring-4 focus:ring-[--color-accent-ring]"
+          className="app-field-input h-[58px] w-full rounded-[1.25rem] px-3.5 pr-11 text-lg font-black tabular-nums outline-none transition"
         />
-        <span className="pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full bg-[--color-surface-2] px-1.5 py-0.5 text-[10px] font-black text-[--color-muted-strong]">
+        <span className="app-field-unit pointer-events-none absolute right-3.5 top-1/2 -translate-y-1/2 rounded-full px-1.5 py-0.5 text-[10px] font-black">
           {unit}
         </span>
       </div>
@@ -540,15 +537,17 @@ function EntriesSection({
   onRemove: (id: string) => void;
 }) {
   return (
-    <section className="panel-log rounded-[2.2rem] border border-[--color-outline] p-4 shadow-playful lg:sticky lg:top-4">
-      <div className="flex items-center justify-between">
+    <section
+      className="app-card app-card-log rounded-[2.2rem] p-4 text-white shadow-deep lg:sticky lg:top-4"
+    >
+      <div className="relative flex items-center justify-between">
         <div>
           <h2 className="text-lg font-black tracking-tight">Today&apos;s log</h2>
-          <div className="text-xs font-bold text-[--color-muted-strong]">
+          <div className="text-xs font-bold text-white/70">
             Swipe the day forward, one food at a time.
           </div>
         </div>
-        <span className="rounded-full border border-[--color-outline] bg-[--color-blush] px-3 py-1.5 text-xs font-black text-[--color-fg] shadow-pop-small">
+        <span className="rounded-full border border-white/14 bg-white/12 px-3 py-1.5 text-xs font-black text-white shadow-pop-small">
           {entries.length}
         </span>
       </div>
@@ -556,7 +555,7 @@ function EntriesSection({
       {entries.length === 0 ? (
         <EmptyState />
       ) : (
-        <ul className="mt-4 grid gap-2.5">
+        <ul className="relative mt-4 grid gap-2.5">
           {entries.map((entry) => (
             <EntryRow key={entry.id} entry={entry} onRemove={onRemove} />
           ))}
@@ -568,9 +567,9 @@ function EntriesSection({
 
 function EmptyState() {
   return (
-    <div className="mt-4 grid min-h-56 place-items-center rounded-[1.7rem] border-2 border-dashed border-[--color-fg] bg-white/75 p-6 text-center">
+    <div className="relative mt-4 grid min-h-56 place-items-center rounded-[1.7rem] border border-dashed border-white/28 bg-black/18 p-6 text-center">
       <div>
-        <div className="mx-auto grid h-16 w-16 place-items-center rounded-[1.4rem] bg-[--color-sky-soft] text-[--color-sky] shadow-float">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-[1.4rem] border border-white/12 bg-white/10 text-white shadow-float">
           <svg
             viewBox="0 0 24 24"
             width="26"
@@ -588,7 +587,7 @@ function EmptyState() {
           </svg>
         </div>
         <div className="mt-4 text-base font-black">Ready when you are</div>
-        <div className="mt-1 max-w-48 text-sm font-semibold text-[--color-muted-strong]">
+        <div className="mt-1 max-w-48 text-sm font-semibold text-white/70">
           Quick fills and manual entries will show up here.
         </div>
       </div>
@@ -604,7 +603,7 @@ function EntryRow({
   onRemove: (id: string) => void;
 }) {
   return (
-    <li className="animate-row-in rounded-[1.6rem] border border-[--color-outline] bg-[--color-surface] p-3 shadow-pop-small">
+    <li className="animate-row-in rounded-[1.6rem] border border-white/12 bg-black/22 p-3 shadow-pop-small backdrop-blur">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="truncate text-base font-black">{entry.name}</div>
@@ -612,7 +611,7 @@ function EntryRow({
             <span className="text-2xl font-black leading-none tabular-nums">
               {Math.round(entry.calories)}
             </span>
-            <span className="text-xs font-black text-[--color-muted-strong]">kcal</span>
+            <span className="text-xs font-black text-white/70">kcal</span>
           </div>
         </div>
 
@@ -620,7 +619,7 @@ function EntryRow({
           type="button"
           onClick={() => onRemove(entry.id)}
           aria-label={`Remove ${entry.name}`}
-          className="grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 border-[--color-border-strong] bg-[--color-surface-2] text-[--color-muted-strong] transition hover:bg-[--color-danger-soft] hover:text-[--color-danger] active:scale-95"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full border border-white/14 bg-white/10 text-white/70 transition hover:bg-[--color-danger-soft] hover:text-[--color-danger] active:scale-95"
         >
           <svg
             viewBox="0 0 24 24"
