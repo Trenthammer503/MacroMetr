@@ -54,7 +54,12 @@ export type LogEntry = {
   foodId: string;
   servings: number;
   loggedAt: number;
+  customFood?: Food;
 };
+
+export function entryFood(entry: LogEntry): Food | undefined {
+  return entry.customFood ?? foodById(entry.foodId);
+}
 
 export type Goals = {
   kcal: number;
@@ -75,7 +80,7 @@ export type Totals = { kcal: number; p: number; c: number; f: number };
 export function computeTotals(log: LogEntry[]): Totals {
   return log.reduce<Totals>(
     (acc, entry) => {
-      const food = foodById(entry.foodId);
+      const food = entryFood(entry);
       if (!food) return acc;
       const s = entry.servings;
       return {

@@ -7,7 +7,7 @@ import {
   MEALS,
   MealId,
   Totals,
-  foodById,
+  entryFood,
 } from "../lib/foods";
 import { CalorieHero } from "./CalorieHero";
 import { CalorieRing } from "./CalorieRing";
@@ -194,7 +194,7 @@ export function TodayScreen({
         {MEALS.map((m) => {
           const items = log.filter((e) => e.mealId === m.id);
           const mealKcal = items.reduce(
-            (acc, e) => acc + (foodById(e.foodId)?.kcal ?? 0) * e.servings,
+            (acc, e) => acc + (entryFood(e)?.kcal ?? 0) * e.servings,
             0,
           );
           return (
@@ -308,7 +308,7 @@ export function TodayScreen({
                   }}
                 >
                   {items.map((e) => {
-                    const f = foodById(e.foodId);
+                    const f = entryFood(e);
                     if (!f) return null;
                     return (
                       <div

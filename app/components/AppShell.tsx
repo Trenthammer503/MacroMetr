@@ -55,7 +55,8 @@ function SignedInApp({ uid, email }: { uid: string; email: string | null }) {
   const totals = useMemo(() => computeTotals(log), [log]);
 
   const handleLog = async (food: Food, servings: number, mealId: MealId) => {
-    await logFood(uid, mealId, food.id, servings);
+    const isCustom = food.id.startsWith("custom_");
+    await logFood(uid, mealId, food.id, servings, isCustom ? food : undefined);
 
     const pCal = food.p * servings * 4;
     const cCal = food.c * servings * 4;
