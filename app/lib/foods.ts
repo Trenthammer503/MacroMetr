@@ -100,3 +100,40 @@ export function todayKey(d: Date = new Date()): string {
   const dd = String(d.getDate()).padStart(2, "0");
   return `${yyyy}-${mm}-${dd}`;
 }
+
+export function parseDayKey(key: string): Date {
+  const [y, m, d] = key.split("-").map(Number);
+  return new Date(y, m - 1, d);
+}
+
+export function shiftDayKey(key: string, deltaDays: number): string {
+  const d = parseDayKey(key);
+  d.setDate(d.getDate() + deltaDays);
+  return todayKey(d);
+}
+
+export function formatDayLabel(key: string): {
+  primary: string;
+  secondary: string;
+} {
+  const today = todayKey();
+  const yesterday = shiftDayKey(today, -1);
+  const tomorrow = shiftDayKey(today, 1);
+  const d = parseDayKey(key);
+  const secondary = d
+    .toLocaleDateString(undefined, {
+      weekday: "short",
+      month: "short",
+      day: "numeric",
+    })
+    .toUpperCase();
+  let primary: string;
+  if (key === today) primary = "Today";
+  else if (key === yesterday) primary = "Yesterday";
+  else if (key === tomorrow) primary = "Tomorrow";
+  else
+    primary = d.toLocaleDateString(undefined, {
+      weekday: "long",
+    });
+  return { primary, secondary };
+}
