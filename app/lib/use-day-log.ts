@@ -12,7 +12,7 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { LogEntry, MealId, todayKey } from "./foods";
+import { Food, LogEntry, MealId, todayKey } from "./foods";
 
 export function useDayLog(uid: string) {
   const [log, setLog] = useState<LogEntry[]>([]);
@@ -33,6 +33,7 @@ export function useDayLog(uid: string) {
           foodId: data.foodId,
           servings: data.servings,
           loggedAt: data.loggedAt ?? 0,
+          customFood: data.customFood ?? undefined,
         });
       });
       entries.sort((a, b) => a.loggedAt - b.loggedAt);
@@ -49,6 +50,7 @@ export async function logFood(
   mealId: MealId,
   foodId: string,
   servings: number,
+  customFood?: Food,
 ) {
   await addDoc(collection(db, "users", uid, "log"), {
     day: todayKey(),
@@ -57,6 +59,7 @@ export async function logFood(
     servings,
     loggedAt: Date.now(),
     createdAt: serverTimestamp(),
+    ...(customFood ? { customFood } : {}),
   });
 }
 

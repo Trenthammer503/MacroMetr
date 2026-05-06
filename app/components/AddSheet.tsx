@@ -27,6 +27,7 @@ function AddSheetInner({ mealId, onClose, onLog }: Props) {
   const [picked, setPicked] = useState<Food | null>(null);
   const [servings, setServings] = useState(1);
   const [targetMeal, setTargetMeal] = useState<MealId>(mealId);
+  const [customOpen, setCustomOpen] = useState(false);
 
   const matches: Food[] = useMemo(() => {
     if (query.trim()) {
@@ -35,6 +36,19 @@ function AddSheetInner({ mealId, onClose, onLog }: Props) {
     }
     return RECENT_IDS.map((id) => foodById(id)!).filter(Boolean);
   }, [query]);
+
+  if (customOpen) {
+    return (
+      <CustomFoodForm
+        mealId={targetMeal}
+        setMealId={setTargetMeal}
+        onBack={() => setCustomOpen(false)}
+        onLog={async (food) => {
+          await onLog(food, 1, targetMeal);
+        }}
+      />
+    );
+  }
 
   if (picked) {
     return (
@@ -207,6 +221,62 @@ function AddSheetInner({ mealId, onClose, onLog }: Props) {
       </div>
 
       <div style={{ flex: 1, overflowY: "auto", padding: "4px 20px 32px" }}>
+        <button
+          onClick={() => setCustomOpen(true)}
+          style={{
+            width: "100%",
+            display: "flex",
+            alignItems: "center",
+            gap: 12,
+            padding: "14px 16px",
+            background: theme.surface,
+            border: `0.5px dashed ${theme.borderStrong}`,
+            borderRadius: theme.radius,
+            cursor: "pointer",
+            color: theme.ink,
+            fontFamily: theme.fontDisplay,
+            fontSize: 14,
+            fontWeight: 600,
+            letterSpacing: -0.2,
+            marginTop: 4,
+          }}
+        >
+          <span
+            style={{
+              width: 32,
+              height: 32,
+              borderRadius: 999,
+              background: theme.accent,
+              color: theme.accentInk,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              flexShrink: 0,
+            }}
+          >
+            <svg width="14" height="14" viewBox="0 0 14 14">
+              <path
+                d="M7 2v10M2 7h10"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+              />
+            </svg>
+          </span>
+          <span style={{ flex: 1, textAlign: "left" }}>Quick add custom food</span>
+          <span
+            style={{
+              fontFamily: theme.fontMono,
+              fontSize: 11,
+              color: theme.inkMute,
+              letterSpacing: 0.6,
+              textTransform: "uppercase",
+            }}
+          >
+            Manual
+          </span>
+        </button>
+
         <div
           style={{
             fontFamily: theme.fontDisplay,
@@ -573,6 +643,241 @@ function FoodDetail({
           }}
         >
           Log {k} kcal → {MEAL_LABELS[mealId]}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function CustomFoodForm({
+  mealId,
+  setMealId,
+  onBack,
+  onLog,
+}: {
+  mealId: MealId;
+  setMealId: (m: MealId) => void;
+  onBack: () => void;
+  onLog: (food: Food) => Promise<void> | void;
+}) {
+  const [name, setName] = useState("");
+  const [unit, setUnit] = useState("1 serving");
+  const [kcal, setKcal] = useState("");
+  const [p, setP] = useState("");
+  const [c, setC] = useState("");
+  const [f, setF] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+
+  const num = (s: string) => {
+    const n = parseFloat(s);
+    return Number.isFinite(n) && n >= 0 ? n : 0;
+  };
+
+  const kcalN = num(kcal);
+  const valid = name.trim().length > 0 && kcalN > 0;
+
+  const submit = async () => {
+    if (!valid || submitting) return;
+    setSubmitting(true);
+    const food: Food = {
+      // eslint-disable-next-line react-hooks/purity
+      id: `custom_${Date.now()}`,
+      name: name.trim(),
+      unit: unit.trim() || "1 serving",
+      kcal: kcalN,
+      p: num(p),
+      c: num(c),
+      f: num(f),
+    };
+    await onLog(food);
+  };
+
+  const fieldStyle: React.CSSProperties = {
+    width: "100%",
+    appearance: "none",
+    border: `0.5px solid ${theme.border}`,
+    background: theme.surface,
+    borderRadius: 14,
+    padding: "12px 14px",
+    fontFamily: theme.fontDisplay,
+    fontSize: 15,
+    color: theme.ink,
+    outline: "none",
+    letterSpacing: -0.2,
+  };
+  const labelStyle: React.CSSProperties = {
+    fontFamily: theme.fontDisplay,
+    fontSize: 11,
+    fontWeight: 600,
+    color: theme.inkMute,
+    letterSpacing: 0.8,
+    textTransform: "uppercase",
+    marginBottom: 6,
+  };
+
+  return (
+    <div
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 110,
+        background: theme.bg,
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
+      <div
+        style={{
+          padding: "14px 20px",
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+        }}
+      >
+        <button
+          onClick={onBack}
+          style={{
+            appearance: "none",
+            border: "none",
+            background: theme.surfaceAlt,
+            color: theme.ink,
+            padding: "8px 14px",
+            borderRadius: 999,
+            fontFamily: theme.fontDisplay,
+            fontSize: 13,
+            fontWeight: 600,
+            cursor: "pointer",
+          }}
+        >
+          ← Back
+        </button>
+        <select
+          value={mealId}
+          onChange={(e) => setMealId(e.target.value as MealId)}
+          style={{
+            appearance: "none",
+            border: "none",
+            background: "transparent",
+            fontFamily: theme.fontDisplay,
+            fontSize: 12,
+            fontWeight: 600,
+            color: theme.inkMute,
+            letterSpacing: 0.8,
+            textTransform: "uppercase",
+            cursor: "pointer",
+            outline: "none",
+          }}
+        >
+          {(Object.keys(MEAL_LABELS) as MealId[]).map((m) => (
+            <option key={m} value={m}>
+              {MEAL_LABELS[m]}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      <div style={{ flex: 1, overflowY: "auto", padding: "4px 20px 24px" }}>
+        <div
+          style={{
+            fontFamily: theme.fontDisplay,
+            fontSize: 28,
+            fontWeight: 600,
+            color: theme.ink,
+            letterSpacing: -0.8,
+            marginBottom: 18,
+          }}
+        >
+          Quick add
+        </div>
+
+        <div style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div>
+            <div style={labelStyle}>Name</div>
+            <input
+              autoFocus
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Homemade chili"
+              style={fieldStyle}
+            />
+          </div>
+          <div>
+            <div style={labelStyle}>Serving</div>
+            <input
+              value={unit}
+              onChange={(e) => setUnit(e.target.value)}
+              placeholder="1 bowl, 100g, etc."
+              style={fieldStyle}
+            />
+          </div>
+          <div>
+            <div style={labelStyle}>Calories</div>
+            <input
+              value={kcal}
+              onChange={(e) => setKcal(e.target.value)}
+              inputMode="decimal"
+              placeholder="kcal"
+              style={fieldStyle}
+            />
+          </div>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 10 }}>
+            <div>
+              <div style={labelStyle}>Protein (g)</div>
+              <input
+                value={p}
+                onChange={(e) => setP(e.target.value)}
+                inputMode="decimal"
+                placeholder="0"
+                style={fieldStyle}
+              />
+            </div>
+            <div>
+              <div style={labelStyle}>Carbs (g)</div>
+              <input
+                value={c}
+                onChange={(e) => setC(e.target.value)}
+                inputMode="decimal"
+                placeholder="0"
+                style={fieldStyle}
+              />
+            </div>
+            <div>
+              <div style={labelStyle}>Fat (g)</div>
+              <input
+                value={f}
+                onChange={(e) => setF(e.target.value)}
+                inputMode="decimal"
+                placeholder="0"
+                style={fieldStyle}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div style={{ padding: "12px 20px 32px", background: theme.bg }}>
+        <button
+          onClick={submit}
+          disabled={!valid || submitting}
+          style={{
+            width: "100%",
+            appearance: "none",
+            border: "none",
+            padding: "18px",
+            background: valid ? theme.accent : theme.surfaceAlt,
+            color: valid ? theme.accentInk : theme.inkMute,
+            borderRadius: 999,
+            fontFamily: theme.fontDisplay,
+            fontSize: 16,
+            fontWeight: 700,
+            letterSpacing: -0.2,
+            cursor: valid ? "pointer" : "not-allowed",
+            boxShadow: valid ? `0 8px 24px ${theme.accent}66` : "none",
+          }}
+        >
+          {valid
+            ? `Log ${Math.round(kcalN)} kcal → ${MEAL_LABELS[mealId]}`
+            : "Add a name and calories"}
         </button>
       </div>
     </div>
