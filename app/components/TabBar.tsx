@@ -1,6 +1,6 @@
 "use client";
 
-import { theme } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
 
 export type Tab = "home" | "calendar" | "settings";
 
@@ -13,6 +13,7 @@ export function TabBar({
   setTab: (t: Tab) => void;
   onAdd: () => void;
 }) {
+  const { theme } = useTheme();
   return (
     <div
       style={{
@@ -127,6 +128,7 @@ function TabButton({
   label: string;
   icon: React.ReactNode;
 }) {
+  const { theme } = useTheme();
   return (
     <button
       onClick={onClick}

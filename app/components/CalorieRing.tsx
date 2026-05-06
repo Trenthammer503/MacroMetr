@@ -1,6 +1,6 @@
 "use client";
 
-import { theme } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
 
 export function CalorieRing({
   consumed,
@@ -11,6 +11,7 @@ export function CalorieRing({
   target: number;
   size?: number;
 }) {
+  const { theme } = useTheme();
   const stroke = 10;
   const r = size / 2 - stroke / 2 - 2;
   const c = 2 * Math.PI * r;

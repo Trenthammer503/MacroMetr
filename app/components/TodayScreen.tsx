@@ -1,6 +1,6 @@
 "use client";
 
-import { theme } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
 import {
   Goals,
   LogEntry,
@@ -40,6 +40,7 @@ export function TodayScreen({
   onAddMeal,
   onRemoveEntry,
 }: Props) {
+  const { theme } = useTheme();
   const proteinShort = Math.max(0, goals.protein - totals.p);
   const { primary, secondary } = formatDayLabel(day);
   const isToday = day === todayKey();

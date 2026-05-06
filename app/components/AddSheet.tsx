@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { theme } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
 import { Food, FOODS, MealId, RECENT_IDS, foodById } from "../lib/foods";
 import { FoodRow } from "./FoodRow";
 
@@ -23,6 +23,7 @@ export function AddSheet(props: Props) {
 }
 
 function AddSheetInner({ mealId, onClose, onLog }: Props) {
+  const { theme } = useTheme();
   const [query, setQuery] = useState("");
   const [picked, setPicked] = useState<Food | null>(null);
   const [servings, setServings] = useState(1);
@@ -335,6 +336,7 @@ function FoodDetail({
   onBack: () => void;
   onLog: () => Promise<void> | void;
 }) {
+  const { theme } = useTheme();
   const k = (food.kcal * servings).toFixed(0);
   const initials = (food.name || "")
     .replace(/[^A-Za-z]/g, "")
@@ -660,6 +662,7 @@ function CustomFoodForm({
   onBack: () => void;
   onLog: (food: Food) => Promise<void> | void;
 }) {
+  const { theme } = useTheme();
   const [name, setName] = useState("");
   const [unit, setUnit] = useState("1 serving");
   const [kcal, setKcal] = useState("");

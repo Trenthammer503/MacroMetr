@@ -1,9 +1,10 @@
 "use client";
 
-import { theme } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
 import { AnimatedNumber } from "./AnimatedNumber";
 
 export function CalorieHero({ consumed, target }: { consumed: number; target: number }) {
+  const { theme } = useTheme();
   const remaining = Math.max(0, target - consumed);
   const over = consumed > target;
   return (

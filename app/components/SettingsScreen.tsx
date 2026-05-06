@@ -3,7 +3,8 @@
 import { useState } from "react";
 import { signOut } from "firebase/auth";
 import { auth } from "../lib/firebase";
-import { theme } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
+import { ThemeMode } from "../lib/theme";
 import { Goals } from "../lib/foods";
 import { saveGoals } from "../lib/use-goals";
 
@@ -11,6 +12,8 @@ type Props = {
   uid: string;
   email: string | null;
   goals: Goals;
+  mode: ThemeMode;
+  onChangeMode: (mode: ThemeMode) => void;
 };
 
 export function SettingsScreen(props: Props) {
@@ -18,7 +21,8 @@ export function SettingsScreen(props: Props) {
   return <SettingsForm key={goalsKey} {...props} />;
 }
 
-function SettingsForm({ uid, email, goals }: Props) {
+function SettingsForm({ uid, email, goals, mode, onChangeMode }: Props) {
+  const { theme } = useTheme();
   const [draft, setDraft] = useState<Goals>(goals);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<number | null>(null);
@@ -98,6 +102,65 @@ function SettingsForm({ uid, email, goals }: Props) {
           }}
         >
           {email ?? "—"}
+        </div>
+      </div>
+
+      <div
+        style={{
+          background: theme.surface,
+          border: `0.5px solid ${theme.border}`,
+          borderRadius: theme.radius,
+          padding: 18,
+          marginBottom: 16,
+        }}
+      >
+        <div
+          style={{
+            fontFamily: theme.fontDisplay,
+            fontSize: 16,
+            fontWeight: 600,
+            color: theme.ink,
+            letterSpacing: -0.2,
+            marginBottom: 12,
+          }}
+        >
+          Appearance
+        </div>
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "1fr 1fr",
+            gap: 8,
+            background: theme.surfaceAlt,
+            padding: 4,
+            borderRadius: 999,
+          }}
+        >
+          {(["light", "dark"] as const).map((m) => {
+            const active = mode === m;
+            return (
+              <button
+                key={m}
+                onClick={() => onChangeMode(m)}
+                style={{
+                  appearance: "none",
+                  border: "none",
+                  background: active ? theme.chip : "transparent",
+                  color: active ? theme.chipInk : theme.inkSoft,
+                  padding: "10px 14px",
+                  borderRadius: 999,
+                  fontFamily: theme.fontDisplay,
+                  fontSize: 13,
+                  fontWeight: 700,
+                  letterSpacing: -0.2,
+                  cursor: active ? "default" : "pointer",
+                  textTransform: "capitalize",
+                }}
+              >
+                {m}
+              </button>
+            );
+          })}
         </div>
       </div>
 
@@ -230,6 +293,7 @@ function GoalField({
   color: string;
   onChange: (v: number) => void;
 }) {
+  const { theme } = useTheme();
   return (
     <label
       style={{

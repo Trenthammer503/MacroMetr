@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { GoogleAuthProvider, signInWithPopup } from "firebase/auth";
 import { auth } from "../lib/firebase";
-import { theme } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
 
 const provider = new GoogleAuthProvider();
 
 export function AuthScreen() {
+  const { theme } = useTheme();
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
 
