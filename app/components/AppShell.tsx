@@ -8,6 +8,7 @@ import { Food, MealId, computeTotals, todayKey, shiftDayKey } from "../lib/foods
 import { theme } from "../lib/theme";
 import { AuthScreen } from "./AuthScreen";
 import { TodayScreen } from "./TodayScreen";
+import { CalendarScreen } from "./CalendarScreen";
 import { SettingsScreen } from "./SettingsScreen";
 import { TabBar, Tab } from "./TabBar";
 import { AddSheet } from "./AddSheet";
@@ -104,6 +105,17 @@ function SignedInApp({ uid, email }: { uid: string; email: string | null }) {
           onAddMeal={openAdd}
           onRemoveEntry={(id) => {
             void removeLogEntry(uid, id);
+          }}
+        />
+      )}
+      {tab === "calendar" && (
+        <CalendarScreen
+          uid={uid}
+          goals={goals}
+          selectedDay={day}
+          onSelectDay={(key) => {
+            setDay(key);
+            setTab("home");
           }}
         />
       )}

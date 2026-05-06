@@ -18,11 +18,12 @@ A running ledger of what's built, how it's wired, and what's planned. Read this 
 | `app/page.tsx` | Renders `<AppShell />`. |
 | `app/components/AppShell.tsx` | Top-level routing between auth / today / settings tabs, owns add-sheet + flash/pulse animation state. |
 | `app/components/TodayScreen.tsx` | Day view: hero ring, macro cards, protein nudge, per-meal item lists. |
+| `app/components/CalendarScreen.tsx` | Month grid heatmap; tap a day to jump back to Today screen for that date. |
 | `app/components/AddSheet.tsx` | Bottom-sheet food picker with search, recents, detail/serving step, **and quick-add custom food form**. |
 | `app/components/SettingsScreen.tsx` | Goal editing + sign-out. |
 | `app/components/CalorieHero.tsx`, `CalorieRing.tsx`, `MacroCard.tsx`, `FoodRow.tsx`, `AnimatedNumber.tsx`, `TabBar.tsx` | Presentational. |
 | `app/lib/foods.ts` | Food/meal/log type defs, hard-coded `FOODS` catalog, `computeTotals`, `entryFood` lookup helper. |
-| `app/lib/use-day-log.ts` | `useDayLog` (subscribes to today's entries), `logFood`, `removeLogEntry`. |
+| `app/lib/use-day-log.ts` | `useDayLog` (subscribes to one day), `useMonthLogs` (subscribes to a date range, grouped by day), `logFood`, `removeLogEntry`. |
 | `app/lib/use-goals.ts` | `useGoals` (per-user kcal/macro targets). |
 | `app/lib/auth-context.tsx`, `firebase.ts`, `theme.ts` | Plumbing. |
 
@@ -52,6 +53,7 @@ users/{uid}/goals/current
 - **Quick add custom food** *(new)*: dashed entry at the top of the add list opens a manual form (name, serving label, kcal, P/C/F). Logged with `foodId = "custom_<ts>"` and a `customFood` snapshot stored on the entry — no library/catalog write. Reads use `entryFood(entry)` which prefers the snapshot, falling back to the static catalog.
 - **Day rollover**: `todayKey()` is local-date based; `useDayLog` re-subscribes when uid or day changes (note: it does **not** re-subscribe at midnight — see Known gaps).
 - **Date navigation** *(new)*: `AppShell` owns a `day` key (defaults to today). `TodayScreen` header has prev/next chevrons and a tappable label that jumps back to today when off. `useDayLog(uid, day)` and `logFood(uid, day, …)` are parameterized — logging on a non-today screen writes to that day. Helpers in `foods.ts`: `parseDayKey`, `shiftDayKey`, `formatDayLabel`.
+- **Calendar tab** *(new)*: month grid (`CalendarScreen.tsx`), each cell tinted by kcal-hit % vs `goals.kcal`. Today cell outlined; selected `day` outlined more strongly. Tapping a cell sets `day` and switches back to Home. Backed by `useMonthLogs(uid, start, end)` which range-queries `where("day", ">=", start), where("day", "<=", end)`. Month nav via `shiftMonth`/`monthRange` helpers in `foods.ts`.
 
 ## Known gaps / next candidates
 

@@ -112,6 +112,48 @@ export function shiftDayKey(key: string, deltaDays: number): string {
   return todayKey(d);
 }
 
+export function monthRange(anchor: string): {
+  start: string;
+  end: string;
+  monthLabel: string;
+  weeks: (string | null)[][];
+} {
+  const a = parseDayKey(anchor);
+  const year = a.getFullYear();
+  const month = a.getMonth();
+  const first = new Date(year, month, 1);
+  const last = new Date(year, month + 1, 0);
+  const start = todayKey(first);
+  const end = todayKey(last);
+
+  const weeks: (string | null)[][] = [];
+  const leading = first.getDay();
+  let row: (string | null)[] = [];
+  for (let i = 0; i < leading; i++) row.push(null);
+  for (let d = 1; d <= last.getDate(); d++) {
+    row.push(todayKey(new Date(year, month, d)));
+    if (row.length === 7) {
+      weeks.push(row);
+      row = [];
+    }
+  }
+  if (row.length) {
+    while (row.length < 7) row.push(null);
+    weeks.push(row);
+  }
+  const monthLabel = first.toLocaleDateString(undefined, {
+    month: "long",
+    year: "numeric",
+  });
+  return { start, end, monthLabel, weeks };
+}
+
+export function shiftMonth(anchor: string, delta: number): string {
+  const a = parseDayKey(anchor);
+  const next = new Date(a.getFullYear(), a.getMonth() + delta, 1);
+  return todayKey(next);
+}
+
 export function formatDayLabel(key: string): {
   primary: string;
   secondary: string;
