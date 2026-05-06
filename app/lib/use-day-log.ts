@@ -44,6 +44,39 @@ export function useDayLog(uid: string, day: string) {
   return { log };
 }
 
+export function useMonthLogs(uid: string, start: string, end: string) {
+  const [byDay, setByDay] = useState<Map<string, LogEntry[]>>(new Map());
+
+  useEffect(() => {
+    const q = query(
+      collection(db, "users", uid, "log"),
+      where("day", ">=", start),
+      where("day", "<=", end),
+    );
+    const unsub = onSnapshot(q, (snap) => {
+      const map = new Map<string, LogEntry[]>();
+      snap.forEach((d) => {
+        const data = d.data();
+        const entry: LogEntry = {
+          id: d.id,
+          mealId: data.mealId,
+          foodId: data.foodId,
+          servings: data.servings,
+          loggedAt: data.loggedAt ?? 0,
+          customFood: data.customFood ?? undefined,
+        };
+        const arr = map.get(data.day) ?? [];
+        arr.push(entry);
+        map.set(data.day, arr);
+      });
+      setByDay(map);
+    });
+    return () => unsub();
+  }, [uid, start, end]);
+
+  return { byDay };
+}
+
 export async function logFood(
   uid: string,
   day: string,
