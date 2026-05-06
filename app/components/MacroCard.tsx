@@ -1,6 +1,6 @@
 "use client";
 
-import { theme } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
 
 type Props = {
   label: string;
@@ -19,6 +19,7 @@ export function MacroCard({
   unit = "g",
   pulse = false,
 }: Props) {
+  const { theme } = useTheme();
   const W = 92;
   const H = 78;
   const cx = W / 2;

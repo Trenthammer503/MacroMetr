@@ -1,6 +1,6 @@
 "use client";
 
-import { theme } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
 import { Food } from "../lib/foods";
 
 export function FoodRow({
@@ -14,6 +14,7 @@ export function FoodRow({
   onTap?: () => void;
   showAdd?: boolean;
 }) {
+  const { theme } = useTheme();
   const initials = (food.name || "")
     .replace(/[^A-Za-z]/g, "")
     .slice(0, 2)

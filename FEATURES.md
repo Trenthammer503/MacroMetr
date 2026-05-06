@@ -6,7 +6,7 @@ A running ledger of what's built, how it's wired, and what's planned. Read this 
 
 - **Framework**: Next.js 16.2.4 (App Router). See `AGENTS.md` — this is a breaking-change version; consult `node_modules/next/dist/docs/` before assuming any API.
 - **React**: 19.2.4
-- **Styling**: Tailwind v4 + inline styles via a central `theme` object (`app/lib/theme.ts`). No CSS modules.
+- **Styling**: Tailwind v4 + inline styles via theme palettes (`app/lib/theme.ts` exports `lightTheme` / `darkTheme`) read through the `useTheme()` hook (`app/lib/theme-context.tsx`). No CSS modules.
 - **Backend**: Firebase (Auth + Firestore) — config in `app/lib/firebase.ts`.
 - **Auth**: Google sign-in only (`app/components/AuthScreen.tsx`, `app/lib/auth-context.tsx`).
 - **Lint**: `eslint-config-next`. Run `npm run lint`.
@@ -20,11 +20,13 @@ A running ledger of what's built, how it's wired, and what's planned. Read this 
 | `app/components/TodayScreen.tsx` | Day view: hero ring, macro cards, protein nudge, per-meal item lists. |
 | `app/components/CalendarScreen.tsx` | Month grid heatmap; tap a day to jump back to Today screen for that date. |
 | `app/components/AddSheet.tsx` | Bottom-sheet food picker with search, recents, detail/serving step, **and quick-add custom food form**. |
-| `app/components/SettingsScreen.tsx` | Goal editing + sign-out. |
+| `app/components/SettingsScreen.tsx` | Appearance toggle (light/dark) + goal editing + sign-out. |
 | `app/components/CalorieHero.tsx`, `CalorieRing.tsx`, `MacroCard.tsx`, `FoodRow.tsx`, `AnimatedNumber.tsx`, `TabBar.tsx` | Presentational. |
 | `app/lib/foods.ts` | Food/meal/log type defs, hard-coded `FOODS` catalog, `computeTotals`, `entryFood` lookup helper. |
 | `app/lib/use-day-log.ts` | `useDayLog` (subscribes to one day), `useMonthLogs` (subscribes to a date range, grouped by day), `logFood`, `removeLogEntry`. |
 | `app/lib/use-goals.ts` | `useGoals` (per-user kcal/macro targets). |
+| `app/lib/use-theme-mode.ts` | `useThemeMode` + `saveThemeMode` — Firestore-backed `"light" \| "dark"` preference. |
+| `app/lib/theme-context.tsx` | `ThemeProvider` + `useTheme()` hook — exposes the active palette. |
 | `app/lib/auth-context.tsx`, `firebase.ts`, `theme.ts` | Plumbing. |
 
 ## Firestore layout
@@ -41,6 +43,9 @@ users/{uid}/log/{entryId}
 
 users/{uid}/goals/current
   kcal, protein, carbs, fat
+
+users/{uid}/settings/appearance
+  mode: "light" | "dark"   // dark restores the warm #221A17 palette
 ```
 
 ## Implemented features
@@ -53,6 +58,7 @@ users/{uid}/goals/current
 - **Quick add custom food** *(new)*: dashed entry at the top of the add list opens a manual form (name, serving label, kcal, P/C/F). Logged with `foodId = "custom_<ts>"` and a `customFood` snapshot stored on the entry — no library/catalog write. Reads use `entryFood(entry)` which prefers the snapshot, falling back to the static catalog.
 - **Day rollover**: `todayKey()` is local-date based; `useDayLog` re-subscribes when uid or day changes (note: it does **not** re-subscribe at midnight — see Known gaps).
 - **Date navigation** *(new)*: `AppShell` owns a `day` key (defaults to today). `TodayScreen` header has prev/next chevrons and a tappable label that jumps back to today when off. `useDayLog(uid, day)` and `logFood(uid, day, …)` are parameterized — logging on a non-today screen writes to that day. Helpers in `foods.ts`: `parseDayKey`, `shiftDayKey`, `formatDayLabel`.
+- **Dark mode toggle** *(new)*: Light/Dark segmented control in Settings. Restores the original warm-dark palette (`#221A17` background, lime/orange accents) from earlier commits. Persisted per-user in Firestore (`users/{uid}/settings/appearance`) via `useThemeMode`/`saveThemeMode`; entire UI re-themes instantly through `ThemeProvider`. Auth screen always renders light (no uid yet).
 - **Calendar tab** *(new)*: month grid (`CalendarScreen.tsx`), each cell tinted by kcal-hit % vs `goals.kcal`. Today cell outlined; selected `day` outlined more strongly. Tapping a cell sets `day` and switches back to Home. Backed by `useMonthLogs(uid, start, end)` which range-queries `where("day", ">=", start), where("day", "<=", end)`. Month nav via `shiftMonth`/`monthRange` helpers in `foods.ts`.
 
 ## Known gaps / next candidates
@@ -67,7 +73,7 @@ users/{uid}/goals/current
 
 ## Conventions worth remembering
 
-- All visual styling pulls from `theme` — don't introduce new colors/fonts directly.
+- All visual styling pulls from the active palette via `const { theme } = useTheme()` — don't import `theme` statically and don't introduce new colors/fonts directly. Any new color must be added to *both* `lightTheme` and `darkTheme` in `app/lib/theme.ts`.
 - Components are `"use client"` by default; server components are not used yet.
 - Inline-snapshot pattern (used for custom foods): when a log entry references data outside the static catalog, store a copy on the entry. Avoids dangling refs when the source is edited or deleted.
 - Keep `LogEntry` shape backward-compatible — old entries without `customFood` must keep resolving via `foodById`.

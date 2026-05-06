@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { theme } from "../lib/theme";
+import { useTheme } from "../lib/theme-context";
 import {
   Goals,
   computeTotals,
@@ -26,6 +26,7 @@ export function CalendarScreen({
   selectedDay,
   onSelectDay,
 }: Props) {
+  const { theme } = useTheme();
   const [anchor, setAnchor] = useState<string>(selectedDay);
   const { start, end, monthLabel, weeks } = useMemo(
     () => monthRange(anchor),

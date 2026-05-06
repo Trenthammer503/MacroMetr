@@ -4,8 +4,10 @@ import { useMemo, useState } from "react";
 import { useAuth } from "../lib/auth-context";
 import { useDayLog, logFood, removeLogEntry } from "../lib/use-day-log";
 import { useGoals } from "../lib/use-goals";
+import { useThemeMode, saveThemeMode } from "../lib/use-theme-mode";
 import { Food, MealId, computeTotals, todayKey, shiftDayKey } from "../lib/foods";
-import { theme } from "../lib/theme";
+import { ThemeProvider, useTheme } from "../lib/theme-context";
+import { ThemeMode } from "../lib/theme";
 import { AuthScreen } from "./AuthScreen";
 import { TodayScreen } from "./TodayScreen";
 import { CalendarScreen } from "./CalendarScreen";
@@ -15,36 +17,63 @@ import { AddSheet } from "./AddSheet";
 
 export function AppShell() {
   const { user, loading } = useAuth();
+  const { mode } = useThemeMode(user?.uid ?? null);
 
   if (loading) {
     return (
-      <div
-        style={{
-          minHeight: "100dvh",
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: theme.bg,
-          color: theme.inkMute,
-          fontFamily: theme.fontDisplay,
-          fontSize: 13,
-          letterSpacing: 0.6,
-          textTransform: "uppercase",
-        }}
-      >
-        Loading…
-      </div>
+      <ThemeProvider mode={mode}>
+        <LoadingShell />
+      </ThemeProvider>
     );
   }
 
   if (!user) {
-    return <AuthScreen />;
+    return (
+      <ThemeProvider mode="light">
+        <AuthScreen />
+      </ThemeProvider>
+    );
   }
 
-  return <SignedInApp uid={user.uid} email={user.email} />;
+  return (
+    <ThemeProvider mode={mode}>
+      <SignedInApp uid={user.uid} email={user.email} mode={mode} />
+    </ThemeProvider>
+  );
 }
 
-function SignedInApp({ uid, email }: { uid: string; email: string | null }) {
+function LoadingShell() {
+  const { theme } = useTheme();
+  return (
+    <div
+      style={{
+        minHeight: "100dvh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: theme.bg,
+        color: theme.inkMute,
+        fontFamily: theme.fontDisplay,
+        fontSize: 13,
+        letterSpacing: 0.6,
+        textTransform: "uppercase",
+      }}
+    >
+      Loading…
+    </div>
+  );
+}
+
+function SignedInApp({
+  uid,
+  email,
+  mode,
+}: {
+  uid: string;
+  email: string | null;
+  mode: ThemeMode;
+}) {
+  const { theme } = useTheme();
   const [tab, setTab] = useState<Tab>("home");
   const [addOpen, setAddOpen] = useState(false);
   const [addMeal, setAddMeal] = useState<MealId>("snack");
@@ -120,7 +149,15 @@ function SignedInApp({ uid, email }: { uid: string; email: string | null }) {
         />
       )}
       {tab === "settings" && (
-        <SettingsScreen uid={uid} email={email} goals={goals} />
+        <SettingsScreen
+          uid={uid}
+          email={email}
+          goals={goals}
+          mode={mode}
+          onChangeMode={(m) => {
+            void saveThemeMode(uid, m);
+          }}
+        />
       )}
 
       <TabBar tab={tab} setTab={setTab} onAdd={() => openAdd("snack")} />
