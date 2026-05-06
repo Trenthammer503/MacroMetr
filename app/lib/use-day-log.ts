@@ -12,13 +12,12 @@ import {
   serverTimestamp,
 } from "firebase/firestore";
 import { db } from "./firebase";
-import { Food, LogEntry, MealId, todayKey } from "./foods";
+import { Food, LogEntry, MealId } from "./foods";
 
-export function useDayLog(uid: string) {
+export function useDayLog(uid: string, day: string) {
   const [log, setLog] = useState<LogEntry[]>([]);
 
   useEffect(() => {
-    const day = todayKey();
     const q = query(
       collection(db, "users", uid, "log"),
       where("day", "==", day),
@@ -40,20 +39,21 @@ export function useDayLog(uid: string) {
       setLog(entries);
     });
     return () => unsub();
-  }, [uid]);
+  }, [uid, day]);
 
   return { log };
 }
 
 export async function logFood(
   uid: string,
+  day: string,
   mealId: MealId,
   foodId: string,
   servings: number,
   customFood?: Food,
 ) {
   await addDoc(collection(db, "users", uid, "log"), {
-    day: todayKey(),
+    day,
     mealId,
     foodId,
     servings,

@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import { useAuth } from "../lib/auth-context";
 import { useDayLog, logFood, removeLogEntry } from "../lib/use-day-log";
 import { useGoals } from "../lib/use-goals";
-import { Food, MealId, computeTotals } from "../lib/foods";
+import { Food, MealId, computeTotals, todayKey, shiftDayKey } from "../lib/foods";
 import { theme } from "../lib/theme";
 import { AuthScreen } from "./AuthScreen";
 import { TodayScreen } from "./TodayScreen";
@@ -49,14 +49,15 @@ function SignedInApp({ uid, email }: { uid: string; email: string | null }) {
   const [addMeal, setAddMeal] = useState<MealId>("snack");
   const [pulse, setPulse] = useState<"p" | "c" | "f" | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
+  const [day, setDay] = useState<string>(() => todayKey());
 
-  const { log } = useDayLog(uid);
+  const { log } = useDayLog(uid, day);
   const { goals } = useGoals(uid);
   const totals = useMemo(() => computeTotals(log), [log]);
 
   const handleLog = async (food: Food, servings: number, mealId: MealId) => {
     const isCustom = food.id.startsWith("custom_");
-    await logFood(uid, mealId, food.id, servings, isCustom ? food : undefined);
+    await logFood(uid, day, mealId, food.id, servings, isCustom ? food : undefined);
 
     const pCal = food.p * servings * 4;
     const cCal = food.c * servings * 4;
@@ -96,6 +97,10 @@ function SignedInApp({ uid, email }: { uid: string; email: string | null }) {
           totals={totals}
           goals={goals}
           pulse={pulse}
+          day={day}
+          onPrevDay={() => setDay((d) => shiftDayKey(d, -1))}
+          onNextDay={() => setDay((d) => shiftDayKey(d, 1))}
+          onJumpToday={() => setDay(todayKey())}
           onAddMeal={openAdd}
           onRemoveEntry={(id) => {
             void removeLogEntry(uid, id);

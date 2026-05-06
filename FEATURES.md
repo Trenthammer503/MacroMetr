@@ -50,14 +50,14 @@ users/{uid}/goals/current
 - **Add sheet** (bottom-sheet): meal selector, search across `FOODS`, recents list, food detail with serving stepper (±0.5).
 - **Macro flash + pulse** on log: dominant macro tints the screen briefly and pulses its card.
 - **Quick add custom food** *(new)*: dashed entry at the top of the add list opens a manual form (name, serving label, kcal, P/C/F). Logged with `foodId = "custom_<ts>"` and a `customFood` snapshot stored on the entry — no library/catalog write. Reads use `entryFood(entry)` which prefers the snapshot, falling back to the static catalog.
-- **Day rollover**: `todayKey()` is local-date based; `useDayLog` re-subscribes when uid changes (note: it does **not** re-subscribe at midnight — see Known gaps).
+- **Day rollover**: `todayKey()` is local-date based; `useDayLog` re-subscribes when uid or day changes (note: it does **not** re-subscribe at midnight — see Known gaps).
+- **Date navigation** *(new)*: `AppShell` owns a `day` key (defaults to today). `TodayScreen` header has prev/next chevrons and a tappable label that jumps back to today when off. `useDayLog(uid, day)` and `logFood(uid, day, …)` are parameterized — logging on a non-today screen writes to that day. Helpers in `foods.ts`: `parseDayKey`, `shiftDayKey`, `formatDayLabel`.
 
 ## Known gaps / next candidates
 
 - **No persisted custom-food library**. Quick-adds are one-off snapshots. If users repeat the same custom item, a `users/{uid}/foods` collection + appearing in search would be the next step.
 - **Recents are hard-coded** (`RECENT_IDS` in `foods.ts`) — not user-specific and don't include custom foods.
-- **No date navigation** — only "today" is viewable/editable.
-- **Day rollover at midnight**: subscription doesn't refresh; user must reload.
+- **Day rollover at midnight**: subscription doesn't refresh while sitting on "today"; user must reload (or tap a nav arrow and back).
 - **No edit on existing log entry** (only delete + re-add).
 - **Catalog is static** in code, not in Firestore.
 - **No tests** (no test runner configured).

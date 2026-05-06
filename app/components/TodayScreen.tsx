@@ -8,6 +8,8 @@ import {
   MealId,
   Totals,
   entryFood,
+  formatDayLabel,
+  todayKey,
 } from "../lib/foods";
 import { CalorieHero } from "./CalorieHero";
 import { CalorieRing } from "./CalorieRing";
@@ -18,6 +20,10 @@ type Props = {
   totals: Totals;
   goals: Goals;
   pulse: "p" | "c" | "f" | null;
+  day: string;
+  onPrevDay: () => void;
+  onNextDay: () => void;
+  onJumpToday: () => void;
   onAddMeal: (mealId: MealId) => void;
   onRemoveEntry: (entryId: string) => void;
 };
@@ -27,16 +33,30 @@ export function TodayScreen({
   totals,
   goals,
   pulse,
+  day,
+  onPrevDay,
+  onNextDay,
+  onJumpToday,
   onAddMeal,
   onRemoveEntry,
 }: Props) {
   const proteinShort = Math.max(0, goals.protein - totals.p);
-  const today = new Date();
-  const dateLabel = today.toLocaleDateString(undefined, {
-    weekday: "short",
-    month: "short",
-    day: "numeric",
-  });
+  const { primary, secondary } = formatDayLabel(day);
+  const isToday = day === todayKey();
+
+  const navBtnStyle: React.CSSProperties = {
+    appearance: "none",
+    border: `0.5px solid ${theme.border}`,
+    background: theme.surface,
+    color: theme.inkSoft,
+    width: 36,
+    height: 36,
+    borderRadius: 999,
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    cursor: "pointer",
+  };
 
   return (
     <div style={{ padding: "8px 20px 120px" }}>
@@ -45,10 +65,27 @@ export function TodayScreen({
           display: "flex",
           justifyContent: "space-between",
           alignItems: "center",
+          gap: 12,
           marginBottom: 18,
         }}
       >
-        <div>
+        <button
+          onClick={onPrevDay}
+          aria-label="Previous day"
+          style={navBtnStyle}
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14">
+            <path
+              d="M9 2L4 7l5 5"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </svg>
+        </button>
+        <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
           <div
             style={{
               fontFamily: theme.fontDisplay,
@@ -59,21 +96,41 @@ export function TodayScreen({
               textTransform: "uppercase",
             }}
           >
-            {dateLabel}
+            {secondary}
           </div>
-          <div
+          <button
+            onClick={isToday ? undefined : onJumpToday}
+            disabled={isToday}
+            aria-label={isToday ? undefined : "Jump to today"}
             style={{
+              appearance: "none",
+              border: "none",
+              background: "transparent",
+              padding: 0,
+              marginTop: 2,
               fontFamily: theme.fontDisplay,
               fontSize: 28,
               fontWeight: 600,
               color: theme.ink,
               letterSpacing: -0.8,
-              marginTop: 2,
+              cursor: isToday ? "default" : "pointer",
             }}
           >
-            Today
-          </div>
+            {primary}
+          </button>
         </div>
+        <button onClick={onNextDay} aria-label="Next day" style={navBtnStyle}>
+          <svg width="14" height="14" viewBox="0 0 14 14">
+            <path
+              d="M5 2l5 5-5 5"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              fill="none"
+            />
+          </svg>
+        </button>
       </div>
 
       <div
