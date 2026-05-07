@@ -9,7 +9,6 @@ import {
   Totals,
   entryFood,
   formatDayLabel,
-  todayKey,
 } from "../lib/foods";
 import { CalorieHero } from "./CalorieHero";
 import { CalorieRing } from "./CalorieRing";
@@ -23,7 +22,7 @@ type Props = {
   day: string;
   onPrevDay: () => void;
   onNextDay: () => void;
-  onJumpToday: () => void;
+  onOpenCalendar: () => void;
   onAddMeal: (mealId: MealId) => void;
   onRemoveEntry: (entryId: string) => void;
 };
@@ -36,14 +35,13 @@ export function TodayScreen({
   day,
   onPrevDay,
   onNextDay,
-  onJumpToday,
+  onOpenCalendar,
   onAddMeal,
   onRemoveEntry,
 }: Props) {
   const { theme } = useTheme();
   const proteinShort = Math.max(0, goals.protein - totals.p);
   const { primary, secondary } = formatDayLabel(day);
-  const isToday = day === todayKey();
 
   const navBtnStyle: React.CSSProperties = {
     appearance: "none",
@@ -86,8 +84,25 @@ export function TodayScreen({
             />
           </svg>
         </button>
-        <div style={{ flex: 1, minWidth: 0, textAlign: "center" }}>
-          <div
+        <button
+          onClick={onOpenCalendar}
+          aria-label="Open calendar"
+          style={{
+            flex: 1,
+            minWidth: 0,
+            appearance: "none",
+            border: "none",
+            background: "transparent",
+            padding: "4px 8px",
+            borderRadius: 12,
+            cursor: "pointer",
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 2,
+          }}
+        >
+          <span
             style={{
               fontFamily: theme.fontDisplay,
               fontSize: 11,
@@ -98,28 +113,37 @@ export function TodayScreen({
             }}
           >
             {secondary}
-          </div>
-          <button
-            onClick={isToday ? undefined : onJumpToday}
-            disabled={isToday}
-            aria-label={isToday ? undefined : "Jump to today"}
+          </span>
+          <span
             style={{
-              appearance: "none",
-              border: "none",
-              background: "transparent",
-              padding: 0,
-              marginTop: 2,
+              display: "inline-flex",
+              alignItems: "center",
+              gap: 6,
               fontFamily: theme.fontDisplay,
               fontSize: 28,
               fontWeight: 600,
               color: theme.ink,
               letterSpacing: -0.8,
-              cursor: isToday ? "default" : "pointer",
             }}
           >
             {primary}
-          </button>
-        </div>
+            <svg
+              width="12"
+              height="12"
+              viewBox="0 0 12 12"
+              style={{ color: theme.inkMute }}
+            >
+              <path
+                d="M2 4l4 4 4-4"
+                stroke="currentColor"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                fill="none"
+              />
+            </svg>
+          </span>
+        </button>
         <button onClick={onNextDay} aria-label="Next day" style={navBtnStyle}>
           <svg width="14" height="14" viewBox="0 0 14 14">
             <path
