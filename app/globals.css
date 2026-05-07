@@ -5,6 +5,11 @@
   --foreground: #0a0a0a;
 }
 
+:root[data-theme="dark"] {
+  --background: #0f0f0f;
+  --foreground: #ffffff;
+}
+
 html,
 body {
   background: var(--background);

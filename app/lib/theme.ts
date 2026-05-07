@@ -43,8 +43,8 @@ export const lightTheme: Theme = {
 };
 
 export const darkTheme: Theme = {
-  bg: "#221A17",
-  surface: "#2B211D",
+  bg: "#0F0F0F",
+  surface: "#1A1A1A",
   surfaceAlt: "rgba(255,255,255,0.06)",
   ink: "#FFFFFF",
   inkSoft: "rgba(255,255,255,0.78)",
