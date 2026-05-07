@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../lib/auth-context";
 import { useDayLog, logFood, removeLogEntry } from "../lib/use-day-log";
 import { useGoals } from "../lib/use-goals";
@@ -22,6 +22,7 @@ export function AppShell() {
   if (loading) {
     return (
       <ThemeProvider mode={mode}>
+        <ThemeSync />
         <LoadingShell />
       </ThemeProvider>
     );
@@ -30,6 +31,7 @@ export function AppShell() {
   if (!user) {
     return (
       <ThemeProvider mode="light">
+        <ThemeSync />
         <AuthScreen />
       </ThemeProvider>
     );
@@ -37,9 +39,26 @@ export function AppShell() {
 
   return (
     <ThemeProvider mode={mode}>
+      <ThemeSync />
       <SignedInApp uid={user.uid} email={user.email} mode={mode} />
     </ThemeProvider>
   );
+}
+
+function ThemeSync() {
+  const { theme, mode } = useTheme();
+  useEffect(() => {
+    const root = document.documentElement;
+    root.setAttribute("data-theme", mode);
+    let meta = document.querySelector('meta[name="theme-color"]');
+    if (!meta) {
+      meta = document.createElement("meta");
+      meta.setAttribute("name", "theme-color");
+      document.head.appendChild(meta);
+    }
+    meta.setAttribute("content", theme.bg);
+  }, [mode, theme.bg]);
+  return null;
 }
 
 function LoadingShell() {
