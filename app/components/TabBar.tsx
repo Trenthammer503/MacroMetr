@@ -22,8 +22,8 @@ export function TabBar({
         left: 0,
         right: 0,
         zIndex: 30,
-        paddingBottom: "calc(20px + env(safe-area-inset-bottom, 0px))",
-        paddingTop: 8,
+        paddingBottom: "calc(10px + env(safe-area-inset-bottom, 0px))",
+        paddingTop: 6,
         background: theme.surface,
         borderTop: `1px solid ${theme.border}`,
         display: "flex",
@@ -62,7 +62,7 @@ export function TabBar({
           justifyContent: "center",
           cursor: "pointer",
           boxShadow: `0 8px 24px ${theme.accent}66`,
-          transform: "translateY(-12px)",
+          transform: "translateY(-4px)",
         }}
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
