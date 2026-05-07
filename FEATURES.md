@@ -18,7 +18,7 @@ A running ledger of what's built, how it's wired, and what's planned. Read this 
 | `app/page.tsx` | Renders `<AppShell />`. |
 | `app/components/AppShell.tsx` | Top-level routing between auth / today / settings tabs, owns add-sheet + flash/pulse animation state. |
 | `app/components/TodayScreen.tsx` | Day view: hero ring, macro cards, protein nudge, per-meal item lists. |
-| `app/components/CalendarScreen.tsx` | Month grid heatmap; tap a day to jump back to Today screen for that date. |
+| `app/components/CalendarSheet.tsx` | Slide-up month grid heatmap opened from the date label on Today; tap a day to jump to it. |
 | `app/components/AddSheet.tsx` | Bottom-sheet food picker with search, recents, detail/serving step, **and quick-add custom food form**. |
 | `app/components/SettingsScreen.tsx` | Goal editing + sign-out. |
 | `app/components/CalorieHero.tsx`, `CalorieRing.tsx`, `MacroCard.tsx`, `FoodRow.tsx`, `AnimatedNumber.tsx`, `TabBar.tsx` | Presentational. |
@@ -52,8 +52,8 @@ users/{uid}/goals/current
 - **Macro flash + pulse** on log: dominant macro tints the screen briefly and pulses its card.
 - **Quick add custom food** *(new)*: dashed entry at the top of the add list opens a manual form (name, serving label, kcal, P/C/F). Logged with `foodId = "custom_<ts>"` and a `customFood` snapshot stored on the entry — no library/catalog write. Reads use `entryFood(entry)` which prefers the snapshot, falling back to the static catalog.
 - **Day rollover**: `todayKey()` is local-date based; `useDayLog` re-subscribes when uid or day changes (note: it does **not** re-subscribe at midnight — see Known gaps).
-- **Date navigation** *(new)*: `AppShell` owns a `day` key (defaults to today). `TodayScreen` header has prev/next chevrons and a tappable label that jumps back to today when off. `useDayLog(uid, day)` and `logFood(uid, day, …)` are parameterized — logging on a non-today screen writes to that day. Helpers in `foods.ts`: `parseDayKey`, `shiftDayKey`, `formatDayLabel`.
-- **Calendar tab** *(new)*: month grid (`CalendarScreen.tsx`), each cell tinted by kcal-hit % vs `goals.kcal`. Today cell outlined; selected `day` outlined more strongly. Tapping a cell sets `day` and switches back to Home. Backed by `useMonthLogs(uid, start, end)` which range-queries `where("day", ">=", start), where("day", "<=", end)`. Month nav via `shiftMonth`/`monthRange` helpers in `foods.ts`.
+- **Date navigation**: `AppShell` owns a `day` key (defaults to today). `TodayScreen` header has prev/next chevrons; the centered date label is a button that opens the calendar sheet. `useDayLog(uid, day)` and `logFood(uid, day, …)` are parameterized — logging on a non-today screen writes to that day. Helpers in `foods.ts`: `parseDayKey`, `shiftDayKey`, `formatDayLabel`.
+- **Calendar sheet** *(new)*: slide-up bottom sheet (`CalendarSheet.tsx`) opened from the date label on Today. Month grid; each cell tinted by kcal-hit % vs `goals.kcal`. Today cell outlined; selected `day` outlined more strongly. Tapping a cell sets `day` and closes the sheet. Backed by `useMonthLogs(uid, start, end)` which range-queries `where("day", ">=", start), where("day", "<=", end)`. Month nav via `shiftMonth`/`monthRange` helpers in `foods.ts`.
 
 ## Known gaps / next candidates
 

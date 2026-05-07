@@ -8,7 +8,7 @@ import { Food, MealId, computeTotals, todayKey, shiftDayKey } from "../lib/foods
 import { theme } from "../lib/theme";
 import { AuthScreen } from "./AuthScreen";
 import { TodayScreen } from "./TodayScreen";
-import { CalendarScreen } from "./CalendarScreen";
+import { CalendarSheet } from "./CalendarSheet";
 import { SettingsScreen } from "./SettingsScreen";
 import { TabBar, Tab } from "./TabBar";
 import { AddSheet } from "./AddSheet";
@@ -51,6 +51,7 @@ function SignedInApp({ uid, email }: { uid: string; email: string | null }) {
   const [pulse, setPulse] = useState<"p" | "c" | "f" | null>(null);
   const [flash, setFlash] = useState<string | null>(null);
   const [day, setDay] = useState<string>(() => todayKey());
+  const [calendarOpen, setCalendarOpen] = useState(false);
 
   const { log } = useDayLog(uid, day);
   const { goals } = useGoals(uid);
@@ -101,26 +102,28 @@ function SignedInApp({ uid, email }: { uid: string; email: string | null }) {
           day={day}
           onPrevDay={() => setDay((d) => shiftDayKey(d, -1))}
           onNextDay={() => setDay((d) => shiftDayKey(d, 1))}
-          onJumpToday={() => setDay(todayKey())}
+          onOpenCalendar={() => setCalendarOpen(true)}
           onAddMeal={openAdd}
           onRemoveEntry={(id) => {
             void removeLogEntry(uid, id);
           }}
         />
       )}
-      {tab === "calendar" && (
-        <CalendarScreen
+      {tab === "settings" && (
+        <SettingsScreen uid={uid} email={email} goals={goals} />
+      )}
+
+      {calendarOpen && (
+        <CalendarSheet
           uid={uid}
           goals={goals}
           selectedDay={day}
           onSelectDay={(key) => {
             setDay(key);
-            setTab("home");
+            setCalendarOpen(false);
           }}
+          onClose={() => setCalendarOpen(false)}
         />
-      )}
-      {tab === "settings" && (
-        <SettingsScreen uid={uid} email={email} goals={goals} />
       )}
 
       <TabBar tab={tab} setTab={setTab} onAdd={() => openAdd("snack")} />

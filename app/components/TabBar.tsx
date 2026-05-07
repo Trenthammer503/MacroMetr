@@ -2,7 +2,7 @@
 
 import { theme } from "../lib/theme";
 
-export type Tab = "home" | "calendar" | "settings";
+export type Tab = "home" | "settings";
 
 export function TabBar({
   tab,
@@ -40,30 +40,6 @@ export function TabBar({
               stroke="currentColor"
               strokeWidth="1.8"
               strokeLinejoin="round"
-            />
-          </svg>
-        }
-      />
-      <TabButton
-        active={tab === "calendar"}
-        onClick={() => setTab("calendar")}
-        label="Calendar"
-        icon={
-          <svg width="22" height="22" viewBox="0 0 22 22" fill="none">
-            <rect
-              x="3"
-              y="5"
-              width="16"
-              height="14"
-              rx="2"
-              stroke="currentColor"
-              strokeWidth="1.8"
-            />
-            <path
-              d="M3 9h16M7 3v4M15 3v4"
-              stroke="currentColor"
-              strokeWidth="1.8"
-              strokeLinecap="round"
             />
           </svg>
         }
